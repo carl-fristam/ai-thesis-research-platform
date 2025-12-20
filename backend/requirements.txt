@@ -3,6 +3,7 @@ annotated-types==0.7.0
 anyio==4.12.0
 blinker==1.9.0
 click==8.3.1
+dnspython==2.8.0
 fastapi==0.125.0
 Flask==3.1.2
 flask-cors==6.0.2
@@ -11,10 +12,12 @@ idna==3.11
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.3
+motor==3.7.1
 numpy==2.3.5
 pandas==2.3.3
 pydantic==2.12.5
 pydantic_core==2.41.5
+pymongo==4.15.5
 python-dateutil==2.9.0.post0
 pytz==2025.2
 six==1.17.0
