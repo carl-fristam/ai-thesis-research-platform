@@ -1,6 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+
+from sqlalchemy.orm import Session
+import database
 
 app = FastAPI()
 
@@ -18,10 +21,36 @@ class Task(BaseModel):
     description: str | None = None
     priority: int
 
+database.Base.metadata.create_all(bind=database.engine)
+
+def get_db():
+    db = database.SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 @app.get("/")
 async def root():
-    return {"status": "ok"}
+    return {"status": "online", "message": "FastAPI + SQLite is humming"}
+
+@app.get("/tasks")
+async def get_tasks(db: Session = Depends(get_db)):
+    # This queries the database for EVERY task in the table
+    tasks = db.query(database.DBTask).all()
+    return tasks
 
 @app.post("/tasks")
-async def create_task(task: Task):
+async def create_task(task: Task, db: Session = Depends(get_db)):
+
+    new_db_task = database.DBTask(
+        title = task.title,
+        description = task.description,
+        priority = task.priority
+    )
+
+    db.add(new_db_task)
+    db.commit()
+    db.refresh(new_db_task)
+
     return {"message": "Success", "task": task}

@@ -100,7 +100,7 @@ function App() {
       </main>
 
       <footer>
-        <p>Branch: <code>feature/fastapi-sql</code></p>
+        <p>Branch: <code>WHADDUP GANG</code></p>
       </footer>
     </div>
   );
