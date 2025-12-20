@@ -6,6 +6,7 @@ click==8.3.1
 fastapi==0.125.0
 Flask==3.1.2
 flask-cors==6.0.2
+h11==0.16.0
 idna==3.11
 itsdangerous==2.2.0
 Jinja2==3.1.6
@@ -23,4 +24,5 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 tzdata==2025.3
 unicorn==2.1.4
+uvicorn==0.38.0
 Werkzeug==3.1.4
