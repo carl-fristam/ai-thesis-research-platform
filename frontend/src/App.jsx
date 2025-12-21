@@ -65,7 +65,11 @@ export default function App() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ title, description: desc, priority: 1 }),
+        body: JSON.stringify({
+          title,
+          description: desc,
+          priority: 1
+        }),
       });
       setTitle("");
       setDesc("");
