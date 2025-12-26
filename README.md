@@ -1,6 +1,6 @@
-# Project M4 Research Suite
+# MSc thesis research tool
 
-Project M4 is a containerized, full-stack application designed for intelligence gathering and source management. It integrates AI-powered academic search via the Exa API with a persistent knowledge repository.
+This research tool is a containerized, full-stack application designed for research gathering and source management. It integrates AI search via the Exa API.
 
 ## Features
 
