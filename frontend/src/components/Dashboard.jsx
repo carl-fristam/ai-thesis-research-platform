@@ -109,7 +109,7 @@ export default function Dashboard({ token, online, handleLogout }) {
                             <div className="w-10 h-10 bg-white flex items-center justify-center">
                                 <span className="text-[#003253] font-bold text-lg">DB</span>
                             </div>
-                            <span className="font-bold tracking-tight text-xl">Master thesis</span>
+                            <span className="font-bold tracking-tight text-xl">Master Thesis</span>
                         </Link>
                     </div>
                     <div className="flex items-center justify-center gap-8">
@@ -120,7 +120,7 @@ export default function Dashboard({ token, online, handleLogout }) {
                         <button onClick={handleLogout} className="px-5 py-2 bg-[#E40000] text-white text-xs font-bold hover:bg-red-700 transition-colors uppercase tracking-wider">Log Out</button>
                     </div>
                 </div>
-            </nav>
+            </nav >
 
             <main className="w-full max-w-7xl px-6 py-32 mx-auto">
                 <div className="flex justify-between items-end mb-8">
@@ -206,6 +206,6 @@ export default function Dashboard({ token, online, handleLogout }) {
                     </table>
                 </div>
             </main>
-        </div>
+        </div >
     );
 }

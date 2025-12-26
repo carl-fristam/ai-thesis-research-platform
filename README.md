@@ -1,106 +1,70 @@
-# Small test project (fullstack)
+# Project M4 Research Suite
 
-## Project Structure
+Project M4 is a containerized, full-stack application designed for intelligence gathering and source management. It integrates AI-powered academic search via the Exa API with a persistent knowledge repository.
+
+## Features
+
+- **Research Chat**: A session-based interface for dynamic research queries using Exa AI.
+- **Knowledge Base**: A central repository to organize, tag, and favorite saved research papers and verified sources.
+- **Authentication**: Secure JWT-based access control for private research sessions.
+- **Corporate UI**: A professional, responsive interface built with React and Tailwind CSS.
+
+## Technical Architecture
+
+- **Frontend**: React (Vite), Tailwind CSS
+- **Backend**: FastAPI (Python), Exa SDK
+- **Database**: MongoDB
+- **Infrastructure**: Docker & Docker Compose
+
+## Repository Structure
 
 ```text
-.
-├── backend/            # FastAPI (Containerized)
-│   ├── main.py         # Routes and Pydantic models
-│   ├── db_config.py    # Mongo connection logic
-│   ├── auth.py         # JWT and Bcrypt logic
-│   └── Dockerfile
-├── frontend/           # React + Vite (Containerized)
+├── backend/            # FastAPI application
+│   ├── main.py         # API endpoints and logic
+│   ├── db_config.py    # MongoDB configuration and helpers
+│   ├── auth.py         # JWT and security logic
+│   └── Dockerfile      # Backend container definition
+├── frontend/           # React application
 │   ├── src/
-│   │   ├── components/
-│   │   │   └── Login.jsx
-│   │   └── App.jsx
-│   └── Dockerfile      # Multi-stage build for React
-├── docker-compose.yml  # Orchestrates all services
-└── requirements.txt    # Python Dependencies
-
+│   │   ├── components/ # Dashboard, Research Chat, and Login
+│   │   └── App.jsx     # Main routing and state management
+│   └── Dockerfile      # Frontend container definition
+└── docker-compose.yml  # Service orchestration
 ```
 
----
+## Quick Start
 
-## Technical Stack
-
-* **Frontend:** React, Tailwind CSS
-* **Backend:** FastAPI (Python)
-* **Database:** MongoDB
-* **Management:** Docker & Docker Compose
-
----
-
-## Launch Instructions
-
-### 1. Initialize Stack
-
-This command builds the images for both the React frontend and FastAPI backend, then starts the MongoDB instance.
+### 1. Initialize the Stack
+Build and start the services (Frontend, Backend, MongoDB, Mongo Express):
 
 ```bash
-docker-compose up --build
-
+docker-compose up --build -d
 ```
 
-### 2. Networking Logic
+### 2. Environment Configuration
+The system assumes the and Exa API Key is configured in the backend. Ensure the Exa client has a valid key for search functionality.
 
-Because all services are in Docker, they communicate using the service names defined in `docker-compose.yml`:
+### 3. Usage
+- **Auth**: Register a user account via the secure login portal.
+- **Search**: Navigate to the Research Area to start a session.
+- **Save**: Selected findings can be promoted to the Knowledge Base for tagging and long-term storage.
 
-* **React to FastAPI:** Uses `http://backend:8000` (internal) or `http://localhost:8000` (from browser).
-* **FastAPI to Mongo:** Uses `mongodb://mongo:27017`.
+## Access Links
 
----
+| Service | Local URL |
+| --- | --- |
+| **Frontend UI** | [http://localhost:5173](http://localhost:5173) |
+| **API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| **Database UI** | [http://localhost:8081](http://localhost:8081) |
 
-## Access Points
+## Maintenance
 
-* **Production UI:** [http://localhost:5173](https://www.google.com/search?q=http://localhost:5173)
-* **API Root:** [http://localhost:8000](https://www.google.com/search?q=http://localhost:8000)
-* **API Docs (Swagger):** [http://localhost:8000/docs](https://www.google.com/search?q=http://localhost:8000/docs)
-* **Database UI:** [http://localhost:8081](https://www.google.com/search?q=http://localhost:8081)
-
----
-
-## API Documentation
-
-| Method | Endpoint | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/` | No | Heartbeat Check |
-| `POST` | `/register` | No | Register User |
-| `POST` | `/login` | No | Get JWT Token |
-| `GET` | `/tasks` | **JWT** | Fetch All Tasks |
-| `POST` | `/tasks` | **JWT** | Create Task |
-| `DELETE` | `/tasks/{id}` | **JWT** | Delete Task |
-
----
-
-## System Commands
-
-**Monitor All Traffic:** View live logs from the frontend, backend, and database simultaneously:
-
-```bash
-docker-compose logs -f
-
-```
-
-**Access Backend Shell:** If you need to run migrations or manual scripts inside the container:
-
-```bash
-docker-compose exec backend bash
-
-```
-
-**Database Cleanup:** Stop the stack and wipe all stored users and tasks:
-
+**Stop and clean volumes:**
 ```bash
 docker-compose down -v
-
 ```
 
-**Rebuild Specific Service:** If you only changed the React code or the FastAPI models:
-
+**View system logs:**
 ```bash
-docker-compose up --build frontend
-# or
-docker-compose up --build backend
-
+docker-compose logs -f
 ```
