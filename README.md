@@ -1,70 +1,42 @@
-# MSc thesis research tool
+# MSc research tool
 
-This research tool is a containerized, full-stack application designed for research gathering and source management. It integrates AI search via the Exa API.
+Full-stack application for gathering and organizing research using the Exa AI API. Built with React, FastAPI, and MongoDB.
 
-## Features
+## Tech Stack
 
-- **Research Chat**: A session-based interface for dynamic research queries using Exa AI.
-- **Knowledge Base**: A central repository to organize, tag, and favorite saved research papers and verified sources.
-- **Authentication**: Secure JWT-based access control for private research sessions.
-- **Corporate UI**: A professional, responsive interface built with React and Tailwind CSS.
+- **Frontend:** React + Tailwind CSS
+- **Backend:** FastAPI (Python)
+- **Database:** MongoDB
+- **Search:** Exa API
 
-## Technical Architecture
+## Setup
 
-- **Frontend**: React (Vite), Tailwind CSS
-- **Backend**: FastAPI (Python), Exa SDK
-- **Database**: MongoDB
-- **Infrastructure**: Docker & Docker Compose
-
-## Repository Structure
-
-```text
-├── backend/            # FastAPI application
-│   ├── main.py         # API endpoints and logic
-│   ├── db_config.py    # MongoDB configuration and helpers
-│   ├── auth.py         # JWT and security logic
-│   └── Dockerfile      # Backend container definition
-├── frontend/           # React application
-│   ├── src/
-│   │   ├── components/ # Dashboard, Research Chat, and Login
-│   │   └── App.jsx     # Main routing and state management
-│   └── Dockerfile      # Frontend container definition
-└── docker-compose.yml  # Service orchestration
-```
-
-## Quick Start
-
-### 1. Initialize the Stack
-Build and start the services (Frontend, Backend, MongoDB, Mongo Express):
+The easiest way to run everything is with Docker:
 
 ```bash
-docker-compose up --build -d
+docker-compose up --build
 ```
 
-### 2. Environment Configuration
-The system assumes the and Exa API Key is configured in the backend. Ensure the Exa client has a valid key for search functionality.
+Access the app at `http://localhost:5173`.
 
-### 3. Usage
-- **Auth**: Register a user account via the secure login portal.
-- **Search**: Navigate to the Research Area to start a session.
-- **Save**: Selected findings can be promoted to the Knowledge Base for tagging and long-term storage.
+## Project Structure
 
-## Access Links
+- **`backend/`**: FastAPI application.
+    - `main.py`: API endpoints (Auth, Chat, Search, Persistence).
+    - `auth.py`: JWT handling and password hashing.
+    - `db_config.py`: MongoDB connection and schema helpers.
+- **`frontend/`**: React application (Vite).
+    - `src/components/`: Core UI components (Dashboard, Research Interface, Login).
 
-| Service | Local URL |
-| --- | --- |
-| **Frontend UI** | [http://localhost:5173](http://localhost:5173) |
-| **API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) |
-| **Database UI** | [http://localhost:8081](http://localhost:8081) |
+## How it Works
 
-## Maintenance
+1.  **Auth**: Users register/login to get a JWT. All data is scoped to the user ID from this token.
+2.  **Search**: The frontend sends queries to the backend, which proxies them to the **Exa API** for semantic search.
+3.  **Persistence**:
+    - **Chats**: Conversation history is stored in MongoDB.
+    - **Saved Results**: Papers/Links are saved to a separate collection in MongoDB.
+4.  **Docker**: `docker-compose` orchestrates the Frontend, Backend, and Database containers in a shared network.
 
-**Stop and clean volumes:**
-```bash
-docker-compose down -v
-```
+## Configuration
 
-**View system logs:**
-```bash
-docker-compose logs -f
-```
+Make sure your Exa API key is set in `backend/main.py` or your environment variables.
