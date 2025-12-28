@@ -212,64 +212,64 @@ async def chat_query(query: ChatQuery, token: str = Depends(oauth2_scheme)):
         except Exception as e:
             print(f"Error loading session: {e}")
 
-    # STEP 2: Get ALL saved sources for context
+    # STEP 2: Load ALL saved sources for context (Live Vector DB)
+    # We sort by _id (creation time) to ensure the "prefix" of the context remains stable
+    # even when new documents are added to the end. This is crucial for caching.
     total_sources = await db_config.saved_results_collection.count_documents({"user_id": user_id})
     
     all_sources = []
-    async for res in db_config.saved_results_collection.find({"user_id": user_id}).limit(100):
+    # No limit - we want the whole DB "live"
+    # Sort by _id (Oldest -> Newest) for stable cache
+    async for res in db_config.saved_results_collection.find({"user_id": user_id}).sort("_id", 1):
         all_sources.append({
             "title": res.get("title", "Untitled"),
             "url": res.get("url", ""),
-            "text": res.get("text", "")[:3000]  # First 3k chars
+            "text": res.get("text", "") # Load full text
         })
-    
-    # STEP 3: Search sources by relevance to question
-    search_results = vector_db.search_documents(query.question, user_id, n_results=100)
-    relevant_results = [res for res in search_results if res.get("score", 0) > 0.2]
-    
-    # STEP 4: Build context with relevant sources
-    MAX_CONTEXT_TOKENS = 50000
-    CHARS_PER_TOKEN = 4
-    
-    selected_sources = []
+
+    # STEP 3: Build distinct Context Block
+    source_texts = []
     source_titles = []
-    current_tokens = 0
     
-    for res in relevant_results:
-        title = res["metadata"].get("title", "Untitled")
-        text = res["text"][:5000] if res["text"] else ""
+    for s in all_sources:
+        # Format: Title, URL, Content
+        block = f"Source: {s['title']}\nURL: {s['url']}\nContent: {s['text']}\n\n---\n\n"
+        source_texts.append(block)
+        source_titles.append(s['title'])
         
-        source_text = f"Source: {title}\nContent: {text}\n\n---\n\n"
-        estimated_tokens = len(source_text) // CHARS_PER_TOKEN
-        
-        if current_tokens + estimated_tokens <= MAX_CONTEXT_TOKENS:
-            selected_sources.append(source_text)
-            source_titles.append(title)
-            current_tokens += estimated_tokens
-        else:
-            break
+    full_context_str = "User's Saved Documents:\n\n" + "".join(source_texts)
+
+    # STEP 4: Build System Prompt with Caching
+    # We place the huge context inside the system prompt with a cache breakpoint
     
-    # STEP 5: Build research context
-    if selected_sources:
-        research_context = "".join(selected_sources)
-    else:
-        # If no relevant sources, provide ALL sources with full content
-        fallback_sources = []
-        fallback_tokens = 0
-        
-        for s in all_sources:
-            source_text = f"Source: {s['title']}\nURL: {s['url']}\nContent: {s['text']}\n\n---\n\n"
-            estimated_tokens = len(source_text) // CHARS_PER_TOKEN
-            
-            if fallback_tokens + estimated_tokens <= MAX_CONTEXT_TOKENS:
-                fallback_sources.append(source_text)
-                fallback_tokens += estimated_tokens
-            else:
-                break
-        
-        research_context = f"User has {total_sources} saved sources:\n\n" + "".join(fallback_sources) if fallback_sources else f"User has {total_sources} saved sources."
-    
-    # STEP 6: Build messages for Claude
+    system_instructions = (
+        "You are a research assistant with access to the user's saved research sources. "
+        "The user's entire library is provided above in the context. "
+        "Use these sources to answer questions when relevant. "
+        "If the user asks a general question, respond naturally and conversationally. "
+        "IMPORTANT: Always use clear, well-structured markdown formatting:\n"
+        "- Use ## for main headings\n"
+        "- Use **bold** for emphasis\n"
+        "- Use numbered lists (1., 2., 3.) for ordered items\n"
+        "- Use bullet points (- ) for unordered lists\n"
+        "- Keep formatting clean and consistent\n"
+        "Be helpful, intelligent, and context-aware. Use [SHOW_SOURCES] at the end only if you referenced specific sources."
+    )
+
+    # Construct system as a list of blocks
+    system_message = [
+        {
+            "type": "text", 
+            "text": full_context_str,
+            "cache_control": {"type": "ephemeral"} # <--- THE CACHE BREAKPOINT
+        },
+        {
+            "type": "text", 
+            "text": system_instructions
+        }
+    ]
+
+    # STEP 5: Build User Messages (History + Question)
     messages = []
     
     # Add conversation history
@@ -279,51 +279,35 @@ async def chat_query(query: ChatQuery, token: str = Depends(oauth2_scheme)):
             "content": msg["content"]
         })
     
-    # Add current question with research context
-    user_content = f"""RESEARCH CONTEXT:
----
-{research_context}
----
-
-USER QUESTION: {query.question}"""
-    
+    # Add current question
     messages.append({
         "role": "user",
-        "content": user_content
+        "content": query.question
     })
-    
-    # STEP 7: System prompt - let Claude be intelligent
-    system_prompt = (
-        "You are a research assistant with access to the user's saved research sources. "
-        "Use the provided sources to answer questions when relevant. "
-        "If the user asks about their sources (how many, what topics, grouping, etc.), use the source list provided. "
-        "If the user asks a general question, respond naturally and conversationally. "
-        "If the user asks about specific research topics, use the relevant source content. "
-        "IMPORTANT: Always use clear, well-structured markdown formatting:\n"
-        "- Use ## for main headings\n"
-        "- Use **bold** for emphasis\n"
-        "- Use numbered lists (1., 2., 3.) for ordered items\n"
-        "- Use bullet points (- ) for unordered lists\n"
-        "- Keep formatting clean and consistent\n"
-        "Be helpful, intelligent, and context-aware. Use [SHOW_SOURCES] at the end only if you referenced specific sources."
-    )
     
     # Debug logging
     print(f"Query: '{query.question}'")
-    print(f"Total sources: {total_sources}")
-    print(f"Relevant sources found: {len(relevant_results)}")
-    print(f"Sources in context: {len(selected_sources)}")
+    print(f"Total sources in context: {total_sources}")
     print(f"Conversation history: {len(conversation_history)} messages")
 
-    # Get complete response from Claude (no streaming to avoid character issues)
+    # Get complete response from Claude
     try:
         response = await anthropic_client.messages.create(
             model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-5-20250929"),
             max_tokens=2048,
-            system=system_prompt,
-            messages=messages
+            system=system_message, # Pass the structured system list
+            messages=messages,
+            extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"} # Enable caching
         )
         
+        # LOGGING FOR VERIFICATION
+        print(f"--- TOKEN USAGE ---")
+        print(f"Input Tokens: {response.usage.input_tokens}")
+        print(f"Output Tokens: {response.usage.output_tokens}")
+        print(f"Cache Creation: {getattr(response.usage, 'cache_creation_input_tokens', 0)}")
+        print(f"Cache Read: {getattr(response.usage, 'cache_read_input_tokens', 0)}")
+        print(f"-------------------")
+
         full_response = response.content[0].text
         
         # Save to session
@@ -337,12 +321,12 @@ USER QUESTION: {query.question}"""
                                 "$each": [
                                     {
                                         "role": "user",
-                                        "content": query.question,
+                                        "text": query.question,
                                         "timestamp": datetime.utcnow().isoformat()
                                     },
                                     {
-                                        "role": "assistant",
-                                        "content": full_response,
+                                        "role": "ai",
+                                        "text": full_response,
                                         "timestamp": datetime.utcnow().isoformat(),
                                         "sources_used": source_titles
                                     }

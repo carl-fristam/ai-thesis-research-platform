@@ -25,6 +25,40 @@ export default function Dashboard({ token, handleLogout, username }) {
     const [activeNote, setActiveNote] = useState(null); // { id, x, y }
     const [noteInput, setNoteInput] = useState("");
 
+    // History Sidebar State
+    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [chats, setChats] = useState([]);
+    const [activeChat, setActiveChat] = useState(null);
+
+    const loadChats = async () => {
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/chats?type=knowledge_base`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setChats(data);
+            }
+        } catch (err) {
+            console.error("Failed to load chats", err);
+        }
+    };
+
+    const deleteChat = async (e, id) => {
+        e.stopPropagation();
+        await fetch(`${API_BASE_URL}/chats/${id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        loadChats();
+        if (activeChat?.id === id) setActiveChat(null);
+    };
+
+    useEffect(() => {
+        if (token) loadChats();
+    }, [token]);
+
     const openNote = (s, e) => {
         e.stopPropagation();
         const rect = e.target.getBoundingClientRect();
@@ -258,7 +292,60 @@ export default function Dashboard({ token, handleLogout, username }) {
                 className="flex-1 flex gap-10 items-start w-full h-full pt-24"
             >
                 {/* LEFT COLUMN: EMBEDDED CHAT */}
-                <div className="w-[40%] h-full flex flex-col pt-10 pb-8 pl-8">
+                <div className="w-[40%] h-full flex flex-col pt-10 pb-8 pl-8 relative">
+                    {/* HISTORY OVERLAY BACKDROP */}
+                    {isHistoryOpen && (
+                        <div
+                            className="fixed inset-0 z-[90] bg-slate-900/5 transition-opacity duration-300 pointer-events-auto"
+                            onClick={() => setIsHistoryOpen(false)}
+                        ></div>
+                    )}
+
+                    <aside
+                        className={`fixed left-0 top-[20vh] bottom-[20vh] w-80 bg-blue-50/50 backdrop-blur-md z-[100] transition-transform duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] flex flex-col shadow-[10px_0_40px_-20px_rgba(0,0,0,0.1)] rounded-tr-[32px] rounded-br-[32px] border-r border-blue-100/30 ${isHistoryOpen ? "translate-x-0" : "-translate-x-full"}`}
+                    >
+                        <div className="px-8 py-8 border-b border-slate-200/50">
+                            <h3 className="text-[11px] font-black uppercase text-blue-600/60 tracking-[0.25em]">Research History</h3>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2 relative scrollbar-hide">
+                            <style>{`
+                                .scrollbar-hide::-webkit-scrollbar { display: none; }
+                                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+                            `}</style>
+                            {chats.length === 0 && <p className="text-[11px] text-slate-400 px-4 py-6 italic font-medium">No history yet.</p>}
+                            {chats.map(chat => (
+                                <div
+                                    key={chat.id}
+                                    onClick={() => {
+                                        setActiveChat(chat);
+                                    }}
+                                    className={`group relative p-5 rounded-[22px] text-sm cursor-pointer transition-all border ${activeChat?.id === chat.id ? "bg-white border-slate-200 shadow-lg shadow-slate-200/50 scale-[1.02] z-10" : "border-transparent hover:bg-white/80 hover:border-slate-100 hover:shadow-sm"}`}>
+                                    <div className={`font-bold truncate pr-6 ${activeChat?.id === chat.id ? "text-blue-600" : "text-slate-600 group-hover:text-blue-600/80"}`}>{chat.title || "Untitled Chat"}</div>
+                                    <div className="text-[10px] text-slate-400 mt-1.5 font-bold tracking-tight uppercase flex justify-between items-center">
+                                        <span>{new Date(chat.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                                        <span className="opacity-0 group-hover:opacity-100 transition-opacity">View Details →</span>
+                                    </div>
+
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            deleteChat(e, chat.id);
+                                        }}
+                                        className="absolute right-3 top-4 w-7 h-7 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100 transition-all"
+                                        title="Delete chat"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                            ))}
+                            {/* Sticky Gradient Fade at Bottom */}
+                            <div className="sticky bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-50 to-transparent pointer-events-none z-20"></div>
+                        </div>
+                    </aside>
+
+
+
                     <ChatWidget
                         token={token}
                         username={username}
@@ -269,6 +356,10 @@ export default function Dashboard({ token, handleLogout, username }) {
                         setIsResizing={setIsResizing}
                         isResizing={isResizing}
                         isEmbedded={true}
+                        activeChat={activeChat}
+                        onNewChat={() => setActiveChat(null)}
+                        onChatUpdated={loadChats} // callback to refresh list when chat updates title/etc
+                        onToggleHistory={() => setIsHistoryOpen(!isHistoryOpen)}
                     />
                 </div>
 
@@ -278,7 +369,7 @@ export default function Dashboard({ token, handleLogout, username }) {
                     {undoState && (
                         <button
                             onClick={undoDelete}
-                            className="absolute -right-4 top-12 z-50 bg-white text-slate-900 w-10 h-10 rounded-lg shadow-xl shadow-slate-900/10 border border-slate-900 flex items-center justify-center hover:scale-110 transition-transform animate-pop-in"
+                            className="absolute -right-4 top-12 z-50 bg-white text-blue-600 w-10 h-10 rounded-lg shadow-xl shadow-blue-900/10 border border-blue-600 flex items-center justify-center hover:scale-110 transition-transform animate-pop-in cursor-pointer"
                             title="Undo Delete"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
@@ -287,7 +378,7 @@ export default function Dashboard({ token, handleLogout, username }) {
 
                     <div className="bg-white border border-slate-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] overflow-hidden rounded-xl transition-shadow hover:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.08)] w-full overflow-x-auto">
                         <div className="p-4">
-                            <h1 className="text-3xl font-bold text-slate-900">Saved sources</h1>
+                            <h1 className="text-3xl font-bold text-blue-600">Saved sources</h1>
                             <p className="text-slate-500 mt-2">Overview of your saved research papers.</p>
                             <div className="flex flex-wrap items-center justify-between gap-4 mt-6">
                                 {/* LEFT: TAG FILTERS */}
@@ -299,8 +390,8 @@ export default function Dashboard({ token, handleLogout, username }) {
                                                 key={tag}
                                                 onClick={() => toggleTagSelect(tag)}
                                                 className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full border transition-all ${selectedTags.includes(tag)
-                                                    ? "bg-slate-900 text-white border-slate-900"
-                                                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-900 hover:text-slate-900"
+                                                    ? "bg-blue-600 text-white border-blue-600"
+                                                    : "bg-white text-slate-500 border-slate-200 hover:border-blue-600 hover:text-blue-600"
                                                     }`}
                                             >
                                                 {tag}
@@ -319,15 +410,15 @@ export default function Dashboard({ token, handleLogout, username }) {
                                     <button
                                         onClick={() => setShowFavorites(!showFavorites)}
                                         className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-full border transition-all ${showFavorites
-                                            ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/10"
-                                            : "bg-white text-slate-500 border-slate-200 hover:border-slate-400 hover:text-slate-900"
+                                            ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-900/10"
+                                            : "bg-white text-slate-500 border-slate-200 hover:border-blue-400 hover:text-blue-600"
                                             }`}
                                     >
                                         ★ Favorites Only
                                     </button>
                                     <div className="relative">
                                         <input
-                                            className="pl-10 pr-4 py-2 border border-slate-200 focus:border-slate-900 outline-none text-xs w-48 bg-white rounded-full transition-all focus:shadow-sm placeholder:text-slate-400 text-slate-700"
+                                            className="pl-10 pr-4 py-2 border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 outline-none text-xs w-48 bg-white rounded-full transition-all focus:shadow-sm placeholder:text-slate-400 text-slate-700"
                                             placeholder="Search keywords..."
                                             value={filter}
                                             onChange={(e) => setFilter(e.target.value)}
@@ -341,7 +432,7 @@ export default function Dashboard({ token, handleLogout, username }) {
                         </div>
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-900 border-b border-slate-900">
+                                <tr className="bg-blue-600 border-b border-blue-700 shadow-sm">
                                     <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white w-12 text-center">Fav</th>
                                     <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white min-w-[300px] whitespace-normal">Source Title / URL</th>
                                     <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-white w-1/5">Tags</th>
@@ -359,9 +450,14 @@ export default function Dashboard({ token, handleLogout, username }) {
                                             <span className={`text-xl ${s.is_favorite ? "text-amber-400" : "text-slate-200 group-hover:text-slate-300"}`}>★</span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="font-bold text-slate-900 text-sm mb-1 break-words whitespace-normal">
+                                            <a
+                                                href={s.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="font-bold text-slate-900 text-sm mb-1 break-words whitespace-normal hover:underline block"
+                                            >
                                                 {s.title || "Untitled Document"}
-                                            </div>
+                                            </a>
                                             <div className="text-xs text-slate-400 font-mono truncate max-w-[200px]">{s.url}</div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -374,7 +470,7 @@ export default function Dashboard({ token, handleLogout, username }) {
                                                 ))}
                                                 <button
                                                     onClick={() => setEditingId(editingId === s.id ? null : s.id)}
-                                                    className="tag-trigger px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-white border border-slate-200 text-slate-400 hover:border-slate-900 hover:text-slate-900 transition-colors"
+                                                    className="tag-trigger px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-white border border-slate-200 text-slate-400 hover:border-blue-600 hover:text-blue-600 transition-colors"
                                                 >
                                                     {editingId === s.id ? "Close" : "+ Tag"}
                                                 </button>
@@ -383,14 +479,14 @@ export default function Dashboard({ token, handleLogout, username }) {
                                                 <div className="tag-popup absolute z-10 bg-white border border-slate-200 shadow-xl p-2 rounded-xl mt-1 flex flex-col gap-2 min-w-[160px]">
                                                     <div className="flex gap-1">
                                                         <input
-                                                            className="px-2 py-1 text-xs border border-slate-300 outline-none focus:border-slate-900 w-full rounded-l-lg"
+                                                            className="px-2 py-1 text-xs border border-slate-300 outline-none focus:border-blue-600 w-full rounded-l-lg"
                                                             placeholder="New tag..."
                                                             value={tagInput}
                                                             onChange={e => setTagInput(e.target.value)}
                                                             autoFocus
                                                             onKeyDown={e => e.key === 'Enter' && addTag(s.id, s.tags || [])}
                                                         />
-                                                        <button onClick={() => addTag(s.id, s.tags || [])} className="px-2 py-1 bg-slate-900 text-white text-xs rounded-r-lg hover:bg-black transition-colors">OK</button>
+                                                        <button onClick={() => addTag(s.id, s.tags || [])} className="px-2 py-1 bg-blue-600 text-white text-xs rounded-r-lg hover:bg-blue-700 transition-colors">OK</button>
                                                     </div>
                                                     {/* Suggestions */}
                                                     {allTags.filter(t => t.toLowerCase().includes(tagInput.toLowerCase()) && !s.tags?.includes(t)).length > 0 && (
@@ -462,7 +558,7 @@ export default function Dashboard({ token, handleLogout, username }) {
                                 <div className="flex justify-end">
                                     <button
                                         onClick={saveNote}
-                                        className="px-3 py-1 bg-slate-900 text-white text-xs font-bold rounded-lg hover:scale-105 transition-transform"
+                                        className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg hover:scale-105 transition-transform shadow-md shadow-blue-200"
                                     >
                                         Save
                                     </button>

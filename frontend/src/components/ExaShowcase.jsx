@@ -192,7 +192,11 @@ export default function ExaShowcase({ token, handleLogout, username }) {
 
                 if (res.ok) {
                     const data = await res.json();
-                    setSavedItems(prev => [prev, { payload, data }]);
+
+                    // FIX: Ensure clean state update with ID from backend
+                    // The backend returns {message, id}, so we construct the full object
+                    const newItem = { ...payload, id: data.id, _id: data.id };
+                    setSavedItems(prev => [...prev, newItem]);
                 }
             }
         } catch (err) {
@@ -219,7 +223,7 @@ export default function ExaShowcase({ token, handleLogout, username }) {
                 if (res.ok) {
                     // Update local state
                     setSavedItems(prev => prev.map(s =>
-                        s.id === savedItem.id ? { s, is_favorite: !s.is_favorite } : s
+                        s.id === savedItem.id ? { ...s, is_favorite: !s.is_favorite } : s
                     ));
                 }
             } else {
@@ -243,7 +247,8 @@ export default function ExaShowcase({ token, handleLogout, username }) {
 
                 if (res.ok) {
                     const data = await res.json();
-                    setSavedItems(prev => [prev, { payload, data }]);
+                    const newItem = { ...payload, id: data.id, _id: data.id };
+                    setSavedItems(prev => [...prev, newItem]);
                 }
             }
         } catch (err) {
@@ -277,26 +282,26 @@ export default function ExaShowcase({ token, handleLogout, username }) {
         <div className="flex flex-col h-screen bg-slate-50 font-sans overflow-hidden pt-20">
             <div className="flex flex-1 overflow-hidden">
                 {/* SIDEBAR */}
-                <aside className="w-64 bg-slate-50 flex flex-col pt-4">
-                    <div className="p-4">
+                <aside className="w-64 bg-slate-50 flex flex-col pt-8 pl-4 pr-2">
+                    <div className="mb-6">
                         <button
                             onClick={createNewChat}
-                            className="w-full py-3 bg-slate-900 text-white font-bold uppercase tracking-wider text-xs hover:bg-black transition-colors flex items-center justify-center gap-2 rounded-full shadow-sm"
+                            className="w-full py-4 bg-blue-600 text-white font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-700 transition-all flex items-center justify-center gap-3 rounded-2xl shadow-lg shadow-blue-900/10 active:scale-[0.98]"
                         >
-                            <span>+</span> New Chat
+                            <span>+</span> New Research Session
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px- pb-4 space-y-1">
-                        <h3 className="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-3 mt-2 px-4">History</h3>
-                        {chats.length === 0 && <p className="text-[10px] text-slate-400 px-2 italic">No history yet.</p>}
+                    <div className="flex-1 overflow-y-auto space-y-3 pb-8">
+                        <h3 className="text-[10px] font-bold uppercase text-blue-600/60 tracking-widest px-3">History</h3>
+                        {chats.length === 0 && <p className="text-[10px] text-slate-400 px-3 italic">No history yet.</p>}
                         {chats.map(chat => (
                             <div
                                 key={chat.id}
                                 onClick={() => selectChat(chat)}
-                                className={`group relative p-3 rounded-lg text-sm cursor-pointer transition-all ${currentChatId === chat.id ? "bg-white ring-1 ring-slate-200 shadow-sm" : "hover:bg-slate-200/50"}`}>
-                                <div className={`font-medium truncate pr-6 ${currentChatId === chat.id ? "text-slate-900" : "text-slate-600"}`}>{chat.title}</div>
-                                <div className="text-[10px] text-slate-400 mt-1 truncate">{new Date(chat.created_at).toLocaleString() || "Just now"}</div>
+                                className={`group relative p-5 rounded-2xl text-[13px] cursor-pointer transition-all border ${currentChatId === chat.id ? "bg-white border-blue-100 shadow-xl shadow-blue-900/5 translate-x-1" : "border-transparent hover:bg-white/50 hover:border-slate-100"}`}>
+                                <div className={`font-bold truncate pr-6 ${currentChatId === chat.id ? "text-blue-600" : "text-slate-600"}`}>{chat.title || "Untitled Search"}</div>
+                                <div className="text-[10px] text-slate-400 mt-2 font-black uppercase tracking-widest">{new Date(chat.created_at).toLocaleDateString() || "Just now"}</div>
 
                                 <button
                                     onClick={(e) => deleteChat(e, chat.id)}
@@ -315,21 +320,21 @@ export default function ExaShowcase({ token, handleLogout, username }) {
                 >
                     <div className="max-w-7xl mx-auto px-6 py-12">
                         <div className="text-center mb-12">
-                            <h1 className="text-3xl font-bold text-slate-900 mb-4">
+                            <h1 className="text-3xl font-bold text-blue-600 mb-4">
                                 {currentChatId ? "Active Session" : "New Research Session"}
                             </h1>
                             <form onSubmit={fetchResults} className="max-w-2xl mx-auto flex gap-2">
                                 <input
-                                    className="flex-1 px-5 py-4 bg-white border border-slate-200 focus:border-slate-400 focus:ring-1 focus:ring-slate-400 outline-none text-slate-900 text-lg shadow-sm rounded-full transition-all"
-                                    placeholder="Enter research query..."
+                                    autoFocus
+                                    className="flex-1 bg-white border-2 border-slate-100 px-8 py-5 rounded-[28px] outline-none text-[15px] font-medium transition-all focus:border-blue-500 focus:shadow-[0_0_40px_-10px_rgba(37,99,235,0.15)] placeholder:text-slate-300 placeholder:font-normal"
+                                    placeholder="Describe what you want to find..."
                                     value={query}
                                     onChange={(e) => setQuery(e.target.value)}
-                                    autoFocus
                                 />
                                 <button
                                     type="submit"
-                                    disabled={loading}
-                                    className="px-8 bg-slate-900 text-white font-bold uppercase tracking-wider text-sm hover:bg-black disabled:bg-slate-300 transition-colors rounded-full shadow-md"
+                                    disabled={loading || !query.trim()}
+                                    className="px-10 py-5 bg-blue-600 text-white font-black uppercase tracking-[0.25em] text-[11px] rounded-[28px] hover:bg-blue-700 hover:shadow-2xl hover:shadow-blue-900/20 active:scale-95 transition-all disabled:opacity-20 flex items-center justify-center gap-3"
                                 >
                                     {loading ? "..." : "Search"}
                                 </button>
