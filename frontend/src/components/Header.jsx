@@ -7,7 +7,7 @@ export default function Header({ username, handleLogout }) {
 
                 {/* LEFT: TITLE */}
                 <div className="flex items-center justify-start gap-8">
-                    <Link to="/" className="flex items-center gap-4 cursor-pointer no-underline text-slate-900 group">
+                    <Link to="/" className="flex items-center gap-4 cursor-pointer no-underline text-blue-600 group">
                         <span className="font-bold tracking-tight text-3xl group-hover:opacity-80 transition-opacity">MSc Research Tool</span>
                     </Link>
                 </div>
@@ -18,7 +18,7 @@ export default function Header({ username, handleLogout }) {
                     <NavLink
                         to="/"
                         className={({ isActive }) =>
-                            `text-lg font-medium no-underline transition-all ${isActive ? "text-slate-900 relative after:absolute after:-bottom-8 after:left-0 after:w-full after:h-0.5 after:bg-slate-900" : "text-slate-500 hover:text-slate-900"}`
+                            `text-lg font-medium no-underline transition-all ${isActive ? "text-blue-600 relative after:absolute after:-bottom-8 after:left-0 after:w-full after:h-0.5 after:bg-blue-600" : "text-slate-500 hover:text-blue-600"}`
                         }
                     >
                         Knowledge Base
@@ -27,7 +27,7 @@ export default function Header({ username, handleLogout }) {
                     <NavLink
                         to="/exa-showcase"
                         className={({ isActive }) =>
-                            `text-lg font-medium no-underline transition-all ${isActive ? "text-slate-900 relative after:absolute after:-bottom-8 after:left-0 after:w-full after:h-0.5 after:bg-slate-900" : "text-slate-500 hover:text-slate-900"}`
+                            `text-lg font-medium no-underline transition-all ${isActive ? "text-blue-600 relative after:absolute after:-bottom-8 after:left-0 after:w-full after:h-0.5 after:bg-blue-600" : "text-slate-500 hover:text-blue-600"}`
                         }
                     >
                         Research Chat

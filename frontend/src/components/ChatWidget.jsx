@@ -3,33 +3,60 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import API_BASE_URL from '../config';
 
-export default function ChatWidget({ username, token, isOpen, toggleChat, width, setWidth, isResizing, setIsResizing, isEmbedded = false }) {
+export default function ChatWidget({
+    username, token, isOpen, toggleChat, width, setWidth, isResizing, setIsResizing, isEmbedded = false,
+    activeChat, onNewChat, onChatUpdated, onToggleHistory
+}) {
     const [messages, setMessages] = useState(() => {
-        // Load from localStorage on mount
+        // Load from localStorage on mount (unless activeChat overrides)
         const saved = localStorage.getItem('kb_chat_messages');
         return saved ? JSON.parse(saved) : [{ role: 'ai', text: 'Ask me anything about your saved sources.' }];
     });
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [sessionId, setSessionId] = useState(() => {
-        // Load session ID from localStorage
         return localStorage.getItem('kb_chat_session_id');
     });
     const scrollRef = useRef(null);
 
-    // Save messages to localStorage whenever they change
+    // Sync with activeChat prop
     useEffect(() => {
-        localStorage.setItem('kb_chat_messages', JSON.stringify(messages));
-    }, [messages]);
+        if (activeChat) {
+            setSessionId(activeChat.id);
+            // Normalize messages for legacy support (role: assistant -> ai, content -> text)
+            const normalizedMessages = (activeChat.messages || []).map(m => ({
+                ...m,
+                role: m.role === 'assistant' ? 'ai' : m.role,
+                text: m.text || m.content || ''
+            }));
+            setMessages(normalizedMessages);
+        } else {
+            // Restore from localStorage if activeChat is cleared (Back to New/Draft)
+            const savedMsgs = localStorage.getItem('kb_chat_messages');
+            setMessages(savedMsgs ? JSON.parse(savedMsgs) : [{ role: 'ai', text: 'Ask me anything about your saved sources.' }]);
 
-    // Save session ID to localStorage whenever it changes
+            const savedSession = localStorage.getItem('kb_chat_session_id');
+            setSessionId(savedSession);
+        }
+    }, [activeChat]);
+
+    // Save messages to localStorage
     useEffect(() => {
-        if (sessionId) {
+        if (!activeChat) { // Only save to default local storage if NOT viewing a specific history item? Or always save?
+            // If viewing history, we don't want to overwrite "current draft" in localStorage maybe?
+            // Or maybe we treat "current active" as what's in local storage.
+            localStorage.setItem('kb_chat_messages', JSON.stringify(messages));
+        }
+    }, [messages, activeChat]);
+
+    // Save session ID
+    useEffect(() => {
+        if (!activeChat && sessionId) {
             localStorage.setItem('kb_chat_session_id', sessionId);
         }
-    }, [sessionId]);
+    }, [sessionId, activeChat]);
 
-    // Auto-scroll to bottom of chat
+    // Auto-scroll
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -72,8 +99,10 @@ export default function ChatWidget({ username, token, isOpen, toggleChat, width,
         setInput('');
         setLoading(true);
 
-        // Create session if doesn't exist (first message in conversation)
+        // Create session if doesn't exist
         let currentSessionId = sessionId;
+        let isNewSession = false;
+
         if (!sessionId) {
             try {
                 const sessionResponse = await fetch(`${API_BASE_URL}/chats`, {
@@ -83,7 +112,7 @@ export default function ChatWidget({ username, token, isOpen, toggleChat, width,
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        title: currentInput.substring(0, 50),  // First message as title
+                        title: currentInput.substring(0, 50),
                         last_message: currentInput,
                         type: 'knowledge_base'
                     })
@@ -91,14 +120,14 @@ export default function ChatWidget({ username, token, isOpen, toggleChat, width,
                 const sessionData = await sessionResponse.json();
                 currentSessionId = sessionData.id;
                 setSessionId(currentSessionId);
+                isNewSession = true;
                 console.log('Created new session:', currentSessionId);
             } catch (err) {
                 console.error('Failed to create session:', err);
-                // Continue without session if creation fails
             }
         }
 
-        // Add a placeholder AI message for streaming
+        // Add placeholder
         const aiMessageId = Date.now();
         setMessages(prev => [...prev, { role: 'ai', text: '', id: aiMessageId, sources: [], showSources: false }]);
 
@@ -111,7 +140,7 @@ export default function ChatWidget({ username, token, isOpen, toggleChat, width,
                 },
                 body: JSON.stringify({
                     question: currentInput,
-                    session_id: currentSessionId  // Include session ID for context
+                    session_id: currentSessionId
                 })
             });
 
@@ -120,10 +149,8 @@ export default function ChatWidget({ username, token, isOpen, toggleChat, width,
                 throw new Error(errorData || 'Failed to fetch');
             }
 
-            // Get complete JSON response (no streaming)
             const data = await response.json();
 
-            // Update AI message with complete response
             setMessages(prev => prev.map(msg =>
                 msg.id === aiMessageId
                     ? {
@@ -134,6 +161,12 @@ export default function ChatWidget({ username, token, isOpen, toggleChat, width,
                     }
                     : msg
             ));
+
+            // Notify parent to refresh list if new session or updated
+            if (onChatUpdated) {
+                onChatUpdated();
+            }
+
         } catch (err) {
             setMessages(prev => prev.map(msg =>
                 msg.id === aiMessageId ? { ...msg, text: `Error: ${err.message}` } : msg
@@ -144,6 +177,9 @@ export default function ChatWidget({ username, token, isOpen, toggleChat, width,
     };
 
     const handleNewChat = () => {
+        if (onNewChat) {
+            onNewChat(); // Tell parent to clear activeChat
+        }
         const initialMessage = [{ role: 'ai', text: 'Ask me anything about your saved sources.' }];
         setMessages(initialMessage);
         setInput('');
@@ -200,18 +236,29 @@ export default function ChatWidget({ username, token, isOpen, toggleChat, width,
                 {/* Header */}
                 <div className={`p-8 pb-4 flex justify-between items-center rounded-tr-[40px] ${isEmbedded ? '' : 'bg-white/50 backdrop-blur-sm'}`}>
                     <div>
-                        <h3 className="text-xl font-bold text-slate-900 tracking-tight">Chat about sources</h3>
+                        <h3 className="text-xl text-blue-600 font-bold tracking-tight">Chat about sources</h3>
                         <div className="flex items-center gap-2 mt-1">
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Connected to Vector DB</p>
+                            <p className="text-[10px] font-bold text-600/60 uppercase tracking-widest">Connected to Vector DB</p>
                         </div>
                     </div>
-                    <button
-                        onClick={handleNewChat}
-                        className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold uppercase tracking-widest rounded-full transition-colors"
-                    >
-                        New Chat
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {/* History Toggle */}
+                        <button
+                            onClick={onToggleHistory}
+                            className="w-8 h-8 flex items-center justify-center bg-white border border-slate-200 hover:border-slate-300 text-slate-400 hover:text-slate-900 rounded-full transition-all text-xs"
+                            title="History"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </button>
+                        {/* New Chat Button */}
+                        <button
+                            onClick={handleNewChat}
+                            className="px-8 py-2 bg-slate-100 hover:bg-blue-600 text-slate-600 hover:text-white text-[11px] font-bold uppercase tracking-widest rounded-full transition-all shadow-sm hover:shadow-md min-w-[140px]"
+                        >
+                            New Chat
+                        </button>
+                    </div>
                 </div>
 
                 {/* Messages Panel with Fade Mask */}
@@ -293,22 +340,11 @@ export default function ChatWidget({ username, token, isOpen, toggleChat, width,
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="bg-slate-900/5 p-5 rounded-[24px] rounded-tr-sm border border-slate-200/50 backdrop-blur-sm text-slate-800 font-medium">
+                                        <div className="bg-blue-50/50 p-5 rounded-[24px] rounded-tr-sm border border-blue-100/50 backdrop-blur-sm text-slate-800 font-medium">
                                             {m.text}
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Source Citations */}
-                                {m.showSources && m.sources && m.sources.length > 0 && (
-                                    <div className={`mt-1 flex flex-wrap gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                        {m.sources.map((s, si) => (
-                                            <div key={si} className="text-[10px] bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full text-slate-500 font-bold tracking-tight hover:bg-slate-100 transition-colors cursor-default" title={s}>
-                                                ⌘ {s.split('/').pop() || s}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
                         ))}
                     </div>
@@ -323,7 +359,7 @@ export default function ChatWidget({ username, token, isOpen, toggleChat, width,
                         <textarea
                             autoFocus
                             rows="1"
-                            className="w-full pl-6 pr-14 py-4 bg-white border border-white rounded-[30px] outline-none focus:ring-4 focus:ring-slate-400/10 transition-all text-[14px] resize-none shadow-xl shadow-slate-200/40 placeholder:text-slate-300 text-slate-600"
+                            className="w-full pl-6 pr-14 py-4 bg-white border border-white rounded-[30px] outline-blue-600 outline-offset-0 transition-all text-[14px] resize-none shadow-xl shadow-slate-200/40 placeholder:text-slate-300 text-slate-600"
                             placeholder="Ask a question..."
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
@@ -337,7 +373,7 @@ export default function ChatWidget({ username, token, isOpen, toggleChat, width,
                         <button
                             onClick={handleSend}
                             disabled={!input.trim() || loading}
-                            className="absolute right-2 p-3 bg-slate-900 text-white rounded-[25px] shadow-lg shadow-slate-900/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-20 flex items-center justify-center"
+                            className="absolute right-2 p-3 bg-blue-600 text-white rounded-[25px] shadow-lg shadow-blue-900/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-20 flex items-center justify-center"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                         </button>

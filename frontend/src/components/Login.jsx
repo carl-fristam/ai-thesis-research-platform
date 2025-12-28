@@ -55,10 +55,10 @@ const Login = ({ onLoginSuccess }) => {
             <div className="w-full max-w-md bg-white p-10 shadow-lg border border-slate-200 mx-4 transition-all rounded-xl">
 
                 <div className="flex flex-col items-center mb-8">
-                    <div className="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                    <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4 shadow-sm shadow-blue-200">
                         <span className="text-white font-bold text-xl tracking-tighter">DB</span>
                     </div>
-                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 text-center">
+                    <h2 className="text-2xl font-bold tracking-tight text-blue-600 text-center">
                         {isRegistering ? "Create Account" : "MSc Research Tool"}
                     </h2>
                 </div>
@@ -80,7 +80,7 @@ const Login = ({ onLoginSuccess }) => {
                         <input
                             type="text"
                             autoComplete="username"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 outline-none transition-all text-slate-900 rounded-lg font-medium"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-slate-900 rounded-lg font-medium"
                             placeholder="user_id"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
@@ -92,7 +92,7 @@ const Login = ({ onLoginSuccess }) => {
                         <input
                             type="password"
                             autoComplete="current-password"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 outline-none transition-all text-slate-900 rounded-lg font-medium"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-slate-900 rounded-lg font-medium"
                             placeholder="••••••••"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -101,7 +101,7 @@ const Login = ({ onLoginSuccess }) => {
                     </div>
                     <button
                         type="submit"
-                        className="w-full py-3 font-bold bg-slate-900 text-white hover:bg-black transition-all uppercase tracking-wider text-xs rounded-lg shadow-md hover:shadow-lg translat-y-0 hover:-translate-y-0.5"
+                        className="w-full py-3 font-bold bg-blue-600 text-white hover:bg-blue-700 transition-all uppercase tracking-wider text-xs rounded-lg shadow-md hover:shadow-lg translat-y-0 hover:-translate-y-0.5"
                     >
                         {isRegistering ? "Create Account" : "Login"}
                     </button>
@@ -111,7 +111,7 @@ const Login = ({ onLoginSuccess }) => {
                     <button
                         type="button"
                         onClick={() => setIsRegistering(!isRegistering)}
-                        className="text-xs text-slate-400 hover:text-slate-900 transition-colors font-medium"
+                        className="text-xs text-slate-400 hover:text-blue-600 transition-colors font-medium"
                     >
                         {isRegistering ? "Already have an account? Login" : "Need access? Create an account"}
                     </button>
