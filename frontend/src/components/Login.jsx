@@ -20,32 +20,20 @@ const Login = ({ onLoginSuccess }) => {
         e.preventDefault();
         setError(null);
         setSuccessMsg(null);
-        const endpoint = isRegistering ? "register" : "login";
 
         try {
-            const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password }),
-            });
-
-            if (response.ok) {
-                if (isRegistering) {
-                    setSuccessMsg("Account created! Please login.");
-                    setIsRegistering(false);
-                    // Slight delay to let user see the message, or just switch them immediately
-                } else {
-                    const data = await response.json();
-                    localStorage.setItem("token", data.access_token);
-                    onLoginSuccess();
-                }
+            if (isRegistering) {
+                await import('../api/auth').then(mod => mod.register(username, password));
+                setSuccessMsg("Account created! Please login.");
+                setIsRegistering(false);
             } else {
-                const errorData = await response.json();
-                setError(errorData.detail || "Authentication failed");
+                const data = await import('../api/auth').then(mod => mod.login(username, password));
+                localStorage.setItem("token", data.access_token);
+                onLoginSuccess();
             }
         } catch (err) {
             console.error("Auth error:", err);
-            setError("Connection failed. Please try again.");
+            setError(err.response?.data?.detail || "Authentication failed");
         }
     };
 
