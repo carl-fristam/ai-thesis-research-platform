@@ -18,64 +18,11 @@ export default function KnowledgeTable({
     openNote,
     addTag,
     removeTag,
+    editingId,
+    setEditingId,
     tagInput,
     setTagInput
 }) {
-    const [tagMenuOpen, setTagMenuOpen] = React.useState(false);
-    const [activeTagPopup, setActiveTagPopup] = React.useState(null);
-
-    const tableContainerRef = React.useRef(null);
-
-    const openTagPopup = (source, e) => {
-        e.stopPropagation();
-        if (activeTagPopup?.id === source.id) {
-            setActiveTagPopup(null);
-            setTagInput("");
-            return;
-        }
-        const rect = e.target.getBoundingClientRect();
-
-        // Check if there is space below (approx 250px needed)
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const showAbove = spaceBelow < 260;
-
-        setActiveTagPopup({
-            id: source.id,
-            tags: source.tags || [],
-            x: rect.left,
-            y: showAbove ? rect.top - 8 : rect.bottom + 8,
-            align: showAbove ? 'bottom' : 'top' // logic to align bottom of popup to y if showAbove
-        });
-        setTagInput("");
-    };
-
-    // Close popup on click outside OR scroll
-    React.useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (activeTagPopup && !e.target.closest(".tag-popup-fixed") && !e.target.closest(".tag-trigger")) {
-                setActiveTagPopup(null);
-            }
-        };
-
-        const handleScroll = () => {
-            if (activeTagPopup) setActiveTagPopup(null);
-        };
-
-        document.addEventListener("mousedown", handleClickOutside);
-
-        const scrollContainer = tableContainerRef.current;
-        if (scrollContainer) {
-            scrollContainer.addEventListener("scroll", handleScroll);
-        }
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-            if (scrollContainer) {
-                scrollContainer.removeEventListener("scroll", handleScroll);
-            }
-        };
-    }, [activeTagPopup]);
-
     // Derived filtering logic inside component to keep container clean
     const filteredSources = sources.filter(s => {
         // 1. Text Search (Multi-keyword, Case-Insensitive)
@@ -97,52 +44,7 @@ export default function KnowledgeTable({
     });
 
     return (
-        <div className="w-[60%] h-full flex flex-col pt-10 pb-8 pr-8 relative">
-            {/* FIXED TAG POPUP */}
-            {activeTagPopup && (
-                <div
-                    className="tag-popup-fixed fixed z-[100] bg-surface border border-border shadow-[0_10px_40px_rgba(0,0,0,0.5)] p-3 rounded-xl flex flex-col gap-3 min-w-[220px] animate-in fade-in zoom-in-95 duration-200"
-                    style={{
-                        top: activeTagPopup.y,
-                        left: activeTagPopup.x,
-                        transform: activeTagPopup.align === 'bottom' ? 'translateY(-100%)' : 'none'
-                    }}
-                >
-                    <div className="flex gap-2">
-                        <input
-                            className="flex-1 px-3 py-2 text-sm border border-border bg-surface-light text-slate-100 outline-none focus:border-primary rounded-lg placeholder:text-slate-500 transition-all font-medium"
-                            placeholder="Add tag..."
-                            value={tagInput}
-                            onChange={e => setTagInput(e.target.value)}
-                            autoFocus
-                            onKeyDown={e => e.key === 'Enter' && addTag(activeTagPopup.id, activeTagPopup.tags)}
-                        />
-                        <button
-                            onClick={() => addTag(activeTagPopup.id, activeTagPopup.tags)}
-                            className="px-3 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20"
-                        >
-                            OK
-                        </button>
-                    </div>
-
-                    {/* Recent / Suggested Tags */}
-                    {allTags.filter(t => t.toLowerCase().includes(tagInput.toLowerCase()) && !activeTagPopup.tags.includes(t)).length > 0 && (
-                        <div className="flex flex-col gap-1 max-h-[200px] overflow-y-auto custom-scrollbar border-t border-border/50 pt-2">
-                            <span className="text-[10px] uppercase font-black text-slate-500 px-1 tracking-widest mb-1">Suggestions</span>
-                            {allTags.filter(t => t.toLowerCase().includes(tagInput.toLowerCase()) && !activeTagPopup.tags.includes(t)).slice(0, 10).map(t => (
-                                <button
-                                    key={t}
-                                    onClick={() => addTag(activeTagPopup.id, activeTagPopup.tags, t)}
-                                    className="text-left text-sm px-3 py-1.5 hover:bg-surface-light text-slate-300 hover:text-white rounded-lg font-medium truncate transition-colors flex items-center justify-between group"
-                                >
-                                    <span>{t}</span>
-                                    <span className="opacity-0 group-hover:opacity-100 text-[10px] text-primary uppercase font-bold">+ Add</span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
+        <div className="w-[60%] h-full flex flex-col pt-10 pb-8 pr-8">
             {/* UNDO BUTTON */}
             {undoState && (
                 <button
@@ -160,75 +62,28 @@ export default function KnowledgeTable({
                     <p className="text-slate-400 mt-2">Overview of your saved research papers.</p>
                     <div className="flex flex-wrap items-center justify-between gap-4 mt-6">
                         {/* LEFT: TAG FILTERS */}
-                        {/* LEFT: TAG FILTERS */}
-                        <div className="flex flex-wrap items-center gap-2">
-                            {/* Filter Dropdown */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setTagMenuOpen(!tagMenuOpen)}
-                                    className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-2 border transition-all ${tagMenuOpen
-                                        ? "bg-surface-light text-primary-light border-primary-light"
-                                        : "bg-surface-light text-slate-400 border-border hover:text-primary-light hover:border-primary-light"
-                                        }`}
-                                >
-                                    <span>Filter Tags</span>
-                                    <svg className={`w-3 h-3 transition-transform ${tagMenuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </button>
-
-                                {tagMenuOpen && (
-                                    <>
-                                        <div className="fixed inset-0 z-40" onClick={() => setTagMenuOpen(false)}></div>
-                                        <div className="absolute top-full left-0 mt-2 w-64 bg-surface border border-border shadow-2xl rounded-xl p-2 z-50 max-h-[300px] overflow-y-auto grid gap-1 animate-in fade-in zoom-in-95 duration-200">
-                                            <div className="px-2 py-1.5 text-[10px] font-black uppercase text-slate-500 tracking-widest border-b border-border/50 mb-1">Available Tags</div>
-                                            {allTags.length === 0 ? (
-                                                <div className="p-3 text-center text-xs text-slate-500 italic">No tags found.</div>
-                                            ) : (
-                                                allTags.map(tag => (
-                                                    <button
-                                                        key={tag}
-                                                        onClick={() => toggleTagSelect(tag)}
-                                                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-between group ${selectedTags.includes(tag)
-                                                            ? "bg-primary/10 text-primary-light"
-                                                            : "text-slate-400 hover:bg-surface-light hover:text-slate-200"
-                                                            }`}
-                                                    >
-                                                        <span className="truncate">{tag}</span>
-                                                        {selectedTags.includes(tag) && (
-                                                            <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
-                                                        )}
-                                                    </button>
-                                                ))
-                                            )}
-                                        </div>
-                                    </>
+                        {allTags.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-[10px] font-bold uppercase text-slate-400 mr-2 tracking-widest">Filters:</span>
+                                {allTags.map(tag => (
+                                    <button
+                                        key={tag}
+                                        onClick={() => toggleTagSelect(tag)}
+                                        className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full border transition-all ${selectedTags.includes(tag)
+                                            ? "bg-primary text-white border-primary"
+                                            : "bg-surface-light text-slate-300 border-border hover:border-primary-light hover:text-primary-light"
+                                            }`}
+                                    >
+                                        {tag}
+                                    </button>
+                                ))}
+                                {selectedTags.length > 0 && (
+                                    <button onClick={() => setSelectedTags([])} className="text-[10px] font-bold uppercase text-slate-400 hover:text-red-400 hover:underline ml-2 tracking-tight">
+                                        Clear
+                                    </button>
                                 )}
                             </div>
-
-                            {/* Divider if we have selected tags */}
-                            {selectedTags.length > 0 && <div className="w-px h-6 bg-border mx-1"></div>}
-
-                            {/* Selected Tags Chips */}
-                            {selectedTags.map(tag => (
-                                <button
-                                    key={tag}
-                                    onClick={() => toggleTagSelect(tag)}
-                                    className="group px-3 py-1 bg-primary text-white border border-primary rounded-full text-[10px] font-bold uppercase tracking-wide flex items-center gap-1.5 hover:bg-red-500 hover:border-red-500 transition-colors shadow-sm shadow-primary/20"
-                                    title="Click to remove"
-                                >
-                                    {tag}
-                                    <svg className="w-3 h-3 opacity-60 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                </button>
-                            ))}
-
-                            {selectedTags.length > 0 && (
-                                <button
-                                    onClick={() => setSelectedTags([])}
-                                    className="text-[10px] font-bold uppercase text-slate-400 hover:text-red-400 ml-1 transition-colors"
-                                >
-                                    Clear All
-                                </button>
-                            )}
-                        </div>
+                        )}
 
                         {/* RIGHT: FAVORITES & SEARCH */}
                         <div className="flex items-center gap-4 ml-auto">
@@ -255,7 +110,7 @@ export default function KnowledgeTable({
                         </div>
                     </div>
                 </div>
-                <div ref={tableContainerRef} className="flex-1 overflow-y-auto min-h-0">
+                <div className="flex-1 overflow-y-auto min-h-0">
                     <table className="w-full text-left border-separate border-spacing-0">
                         {/* THEAD and TBODY content from previous state, assuming tools merge correctly or I just wrap structure */}
                         <thead>
@@ -296,16 +151,41 @@ export default function KnowledgeTable({
                                                 </span>
                                             ))}
                                             <button
-                                                onClick={(e) => openTagPopup(s, e)}
-                                                className={`tag-trigger px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-colors ${activeTagPopup?.id === s.id
-                                                    ? "bg-primary text-white border border-primary"
-                                                    : "bg-background border border-border text-slate-500 hover:border-primary-light hover:text-primary-light"
-                                                    }`}
+                                                onClick={() => setEditingId(editingId === s.id ? null : s.id)}
+                                                className="tag-trigger px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-background border border-border text-slate-500 hover:border-primary-light hover:text-primary-light transition-colors"
                                             >
-                                                {activeTagPopup?.id === s.id ? "Close" : "+ Tag"}
+                                                {editingId === s.id ? "Close" : "+ Tag"}
                                             </button>
                                         </div>
-                                        {/* Popup moved to root level */}
+                                        {editingId === s.id && (
+                                            <div className="tag-popup absolute z-10 bg-surface border border-border shadow-xl p-2 rounded-xl mt-1 flex flex-col gap-2 min-w-[160px]">
+                                                <div className="flex gap-1">
+                                                    <input
+                                                        className="px-2 py-1 text-xs border border-border bg-surface-light text-slate-100 outline-none focus:border-primary w-full rounded-l-lg placeholder:text-slate-500"
+                                                        placeholder="New tag..."
+                                                        value={tagInput}
+                                                        onChange={e => setTagInput(e.target.value)}
+                                                        autoFocus
+                                                        onKeyDown={e => e.key === 'Enter' && addTag(s.id, s.tags || [])}
+                                                    />
+                                                    <button onClick={() => addTag(s.id, s.tags || [])} className="px-2 py-1 bg-primary text-white text-xs rounded-r-lg hover:bg-primary-dark transition-colors">OK</button>
+                                                </div>
+                                                {allTags.filter(t => t.toLowerCase().includes(tagInput.toLowerCase()) && !s.tags?.includes(t)).length > 0 && (
+                                                    <div className="flex flex-col gap-1 max-h-32 overflow-y-auto border-t border-border/50 pt-1">
+                                                        <span className="text-[9px] uppercase font-bold text-slate-500 px-1">Suggestions</span>
+                                                        {allTags.filter(t => t.toLowerCase().includes(tagInput.toLowerCase()) && !s.tags?.includes(t)).map(t => (
+                                                            <button
+                                                                key={t}
+                                                                onClick={() => addTag(s.id, s.tags || [], t)}
+                                                                className="text-left text-xs px-2 py-1 hover:bg-surface-light text-slate-300 hover:text-slate-100 rounded-md font-medium truncate"
+                                                            >
+                                                                {t}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4 relative">
                                         {/* NOTES COLUMN */}
