@@ -15,7 +15,7 @@ export default function Header({ username, handleLogout }) {
                             </svg>
                         </div>
                         <span className="font-display text-xl text-text-primary group-hover:text-primary-light transition-colors">
-                            Research Archive
+                            MSc Research Tool
                         </span>
                     </Link>
                 </div>
