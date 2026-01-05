@@ -23,9 +23,7 @@ export default function KnowledgeTable({
     tagInput,
     setTagInput
 }) {
-    // Derived filtering logic inside component to keep container clean
     const filteredSources = sources.filter(s => {
-        // 1. Text Search (Multi-keyword, Case-Insensitive)
         const searchLower = filter.toLowerCase();
         const keywords = searchLower.split(" ").filter(k => k.trim());
         const matchesSearch = keywords.length === 0 || keywords.every(k =>
@@ -33,151 +31,203 @@ export default function KnowledgeTable({
             s.url?.toLowerCase().includes(k) ||
             s.tags?.some(t => t.toLowerCase().includes(k))
         );
-
-        // 2. Tag Filter (AND logic)
         const matchesTags = selectedTags.length === 0 || selectedTags.every(t => s.tags?.includes(t));
-
-        // 3. Favorites Filter
         const matchesFav = !showFavorites || s.is_favorite;
-
         return matchesSearch && matchesTags && matchesFav;
     });
 
     return (
-        <div className="w-[60%] h-full flex flex-col pt-10 pb-8 pr-8">
+        <div className="w-[60%] h-full flex flex-col pt-6 pb-6 pr-6">
             {/* UNDO BUTTON */}
             {undoState && (
                 <button
                     onClick={undoDelete}
-                    className="absolute -right-4 top-12 z-50 bg-surface text-primary-light w-10 h-10 rounded-lg shadow-xl shadow-primary/20 border border-primary flex items-center justify-center hover:scale-110 transition-transform animate-pop-in cursor-pointer"
+                    className="fixed bottom-8 right-8 z-50 flex items-center gap-3 px-5 py-3 bg-surface border border-border rounded-xl shadow-elevated animate-fade-in-up hover:border-primary transition-all"
                     title="Undo Delete"
                 >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                    <svg className="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                    <span className="text-sm font-medium text-text-primary">Undo delete</span>
                 </button>
             )}
 
-            <div className="bg-surface border border-border shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] rounded-xl w-full flex flex-col flex-1 min-h-0 overflow-hidden">
-                <div className="p-4 shrink-0 bg-surface z-30 relative">
-                    <h1 className="text-3xl font-bold text-primary-light">Saved sources</h1>
-                    <p className="text-slate-400 mt-2">Overview of your saved research papers.</p>
-                    <div className="flex flex-wrap items-center justify-between gap-4 mt-6">
-                        {/* LEFT: TAG FILTERS */}
-                        {allTags.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-[10px] font-bold uppercase text-slate-400 mr-2 tracking-widest">Filters:</span>
-                                {allTags.map(tag => (
-                                    <button
-                                        key={tag}
-                                        onClick={() => toggleTagSelect(tag)}
-                                        className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wide rounded-full border transition-all ${selectedTags.includes(tag)
-                                            ? "bg-primary text-white border-primary"
-                                            : "bg-surface-light text-slate-300 border-border hover:border-primary-light hover:text-primary-light"
-                                            }`}
-                                    >
-                                        {tag}
-                                    </button>
-                                ))}
-                                {selectedTags.length > 0 && (
-                                    <button onClick={() => setSelectedTags([])} className="text-[10px] font-bold uppercase text-slate-400 hover:text-red-400 hover:underline ml-2 tracking-tight">
-                                        Clear
-                                    </button>
-                                )}
-                            </div>
-                        )}
-
-                        {/* RIGHT: FAVORITES & SEARCH */}
-                        <div className="flex items-center gap-4 ml-auto">
+            <div className="bg-surface border border-border shadow-card rounded-2xl w-full flex flex-col flex-1 min-h-0 overflow-hidden">
+                {/* Header */}
+                <div className="p-6 border-b border-border">
+                    <div className="flex items-start justify-between gap-4 mb-6">
+                        <div>
+                            <h1 className="font-display text-display-md text-text-primary">Saved Sources</h1>
+                            <p className="text-sm text-text-muted mt-1">
+                                {sources.length} papers in your knowledge base
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3">
                             <button
                                 onClick={() => setShowFavorites(!showFavorites)}
-                                className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-full border transition-all ${showFavorites
-                                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                                    : "bg-surface-light text-slate-300 border-border hover:border-primary-light hover:text-primary-light"
-                                    }`}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all ${
+                                    showFavorites
+                                        ? "bg-primary text-background"
+                                        : "bg-surface-light border border-border text-text-secondary hover:border-border-light hover:text-text-primary"
+                                }`}
                             >
-                                ★ Favorites Only
+                                <svg className="w-4 h-4" fill={showFavorites ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                </svg>
+                                Favorites
                             </button>
                             <div className="relative">
                                 <input
-                                    className="pl-10 pr-4 py-2 border border-border focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none text-xs w-48 bg-surface-light rounded-full transition-all focus:shadow-sm placeholder:text-slate-500 text-slate-100"
-                                    placeholder="Search keywords..."
+                                    className="w-56 pl-10 pr-4 py-2.5 bg-surface-light border border-border rounded-xl text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all"
+                                    placeholder="Search papers..."
                                     value={filter}
                                     onChange={(e) => setFilter(e.target.value)}
                                 />
-                                <svg className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                <svg className="w-4 h-4 text-text-muted absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
                             </div>
                         </div>
                     </div>
+
+                    {/* Tag filters */}
+                    {allTags.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs font-medium text-text-muted mr-1">Tags:</span>
+                            {allTags.map(tag => (
+                                <button
+                                    key={tag}
+                                    onClick={() => toggleTagSelect(tag)}
+                                    className={`tag-pill ${selectedTags.includes(tag) ? 'active' : ''}`}
+                                >
+                                    {tag}
+                                </button>
+                            ))}
+                            {selectedTags.length > 0 && (
+                                <button
+                                    onClick={() => setSelectedTags([])}
+                                    className="text-xs text-text-muted hover:text-accent-coral transition-colors ml-1"
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
-                <div className="flex-1 overflow-y-auto min-h-0">
+
+                {/* Table */}
+                <div className="flex-1 overflow-y-auto">
                     <table className="w-full text-left border-separate border-spacing-0">
-                        {/* THEAD and TBODY content from previous state, assuming tools merge correctly or I just wrap structure */}
                         <thead>
-                            <tr className="bg-primary border-b border-primary-dark shadow-sm">
-                                <th className="sticky top-0 z-20 bg-primary px-6 py-4 text-xs font-bold uppercase tracking-widest text-white w-12 text-center">Fav</th>
-                                <th className="sticky top-0 z-20 bg-primary px-6 py-4 text-xs font-bold uppercase tracking-widest text-white min-w-[300px] whitespace-normal">Source Title / URL</th>
-                                <th className="sticky top-0 z-20 bg-primary px-6 py-4 text-xs font-bold uppercase tracking-widest text-white w-1/5">Tags</th>
-                                <th className="sticky top-0 z-20 bg-primary px-6 py-4 text-xs font-bold uppercase tracking-widest text-white w-1/5">Notes</th>
-                                <th className="sticky top-0 z-20 bg-primary px-6 py-4 text-xs font-bold uppercase tracking-widest text-white text-right w-24">Action</th>
+                            <tr>
+                                <th className="sticky top-0 z-20 bg-surface-light px-5 py-3 text-xs font-semibold uppercase tracking-wider text-text-muted w-12 text-center border-b border-border">
+                                    Fav
+                                </th>
+                                <th className="sticky top-0 z-20 bg-surface-light px-5 py-3 text-xs font-semibold uppercase tracking-wider text-text-muted min-w-[300px] border-b border-border">
+                                    Source
+                                </th>
+                                <th className="sticky top-0 z-20 bg-surface-light px-5 py-3 text-xs font-semibold uppercase tracking-wider text-text-muted w-1/5 border-b border-border">
+                                    Tags
+                                </th>
+                                <th className="sticky top-0 z-20 bg-surface-light px-5 py-3 text-xs font-semibold uppercase tracking-wider text-text-muted w-1/5 border-b border-border">
+                                    Notes
+                                </th>
+                                <th className="sticky top-0 z-20 bg-surface-light px-5 py-3 text-xs font-semibold uppercase tracking-wider text-text-muted text-right w-20 border-b border-border">
+
+                                </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-border/30">
-                            {filteredSources.map((s) => (
+                        <tbody>
+                            {filteredSources.map((s, idx) => (
                                 <tr
                                     key={s.id}
-                                    className={`hover:bg-surface-light transition-all duration-300 group ${deletingId === s.id ? "opacity-0 scale-95" : "opacity-100"}`}
+                                    className={`group hover:bg-surface-light/50 transition-all duration-200 ${
+                                        deletingId === s.id ? "opacity-0 scale-95" : "opacity-100"
+                                    }`}
+                                    style={{ animationDelay: `${idx * 30}ms` }}
                                 >
-                                    <td className="px-6 py-4 text-center cursor-pointer" onClick={() => toggleFavorite(s)}>
-                                        <span className={`text-xl ${s.is_favorite ? "text-amber-400" : "text-slate-700 group-hover:text-slate-500"}`}>★</span>
+                                    {/* Favorite */}
+                                    <td className="px-5 py-4 text-center border-b border-border/50">
+                                        <button
+                                            onClick={() => toggleFavorite(s)}
+                                            className={`text-lg transition-all ${
+                                                s.is_favorite
+                                                    ? "text-primary hover:text-primary-dark"
+                                                    : "text-text-muted hover:text-primary opacity-30 group-hover:opacity-100"
+                                            }`}
+                                        >
+                                            <svg className="w-5 h-5" fill={s.is_favorite ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                            </svg>
+                                        </button>
                                     </td>
-                                    <td className="px-6 py-4">
+
+                                    {/* Title & URL */}
+                                    <td className="px-5 py-4 border-b border-border/50">
                                         <a
                                             href={s.url}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="font-bold text-slate-100 text-sm mb-1 break-words whitespace-normal hover:underline hover:text-primary-light block"
+                                            className="block font-medium text-sm text-text-primary hover:text-primary transition-colors line-clamp-2"
                                         >
                                             {s.title || "Untitled Document"}
                                         </a>
-                                        <div className="text-xs text-slate-400 font-mono truncate max-w-[200px]">{s.url}</div>
+                                        <p className="text-xs text-text-muted font-mono mt-1 truncate max-w-[250px]">
+                                            {s.url}
+                                        </p>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-wrap gap-2 mb-2">
+
+                                    {/* Tags */}
+                                    <td className="px-5 py-4 border-b border-border/50">
+                                        <div className="flex flex-wrap gap-1.5 mb-2">
                                             {s.tags?.map(t => (
-                                                <span key={t} className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-surface-light text-slate-300 border border-border">
+                                                <span key={t} className="tag-pill group/tag">
                                                     {t}
-                                                    <button onClick={() => removeTag(s, t)} className="ml-1 hover:text-red-400">×</button>
+                                                    <button
+                                                        onClick={() => removeTag(s, t)}
+                                                        className="text-text-muted hover:text-accent-coral transition-colors"
+                                                    >
+                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
                                                 </span>
                                             ))}
                                             <button
                                                 onClick={() => setEditingId(editingId === s.id ? null : s.id)}
-                                                className="tag-trigger px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-background border border-border text-slate-500 hover:border-primary-light hover:text-primary-light transition-colors"
+                                                className="tag-trigger tag-pill hover:border-primary hover:text-primary"
                                             >
-                                                {editingId === s.id ? "Close" : "+ Tag"}
+                                                + Add
                                             </button>
                                         </div>
+
+                                        {/* Tag popup */}
                                         {editingId === s.id && (
-                                            <div className="tag-popup absolute z-10 bg-surface border border-border shadow-xl p-2 rounded-xl mt-1 flex flex-col gap-2 min-w-[160px]">
-                                                <div className="flex gap-1">
+                                            <div className="tag-popup absolute z-30 bg-surface border border-border shadow-elevated p-3 rounded-xl mt-1 min-w-[180px] animate-fade-in">
+                                                <div className="flex gap-1.5">
                                                     <input
-                                                        className="px-2 py-1 text-xs border border-border bg-surface-light text-slate-100 outline-none focus:border-primary w-full rounded-l-lg placeholder:text-slate-500"
+                                                        className="flex-1 px-3 py-2 text-xs bg-surface-light border border-border rounded-lg text-text-primary placeholder:text-text-muted focus:border-primary outline-none"
                                                         placeholder="New tag..."
                                                         value={tagInput}
                                                         onChange={e => setTagInput(e.target.value)}
                                                         autoFocus
                                                         onKeyDown={e => e.key === 'Enter' && addTag(s.id, s.tags || [])}
                                                     />
-                                                    <button onClick={() => addTag(s.id, s.tags || [])} className="px-2 py-1 bg-primary text-white text-xs rounded-r-lg hover:bg-primary-dark transition-colors">OK</button>
+                                                    <button
+                                                        onClick={() => addTag(s.id, s.tags || [])}
+                                                        className="px-3 py-2 bg-primary text-background text-xs font-semibold rounded-lg hover:bg-primary-dark transition-colors"
+                                                    >
+                                                        Add
+                                                    </button>
                                                 </div>
                                                 {allTags.filter(t => t.toLowerCase().includes(tagInput.toLowerCase()) && !s.tags?.includes(t)).length > 0 && (
-                                                    <div className="flex flex-col gap-1 max-h-32 overflow-y-auto border-t border-border/50 pt-1">
-                                                        <span className="text-[9px] uppercase font-bold text-slate-500 px-1">Suggestions</span>
+                                                    <div className="mt-2 pt-2 border-t border-border/50 space-y-0.5 max-h-24 overflow-y-auto">
+                                                        <span className="text-[10px] uppercase font-semibold text-text-muted px-1">Suggestions</span>
                                                         {allTags.filter(t => t.toLowerCase().includes(tagInput.toLowerCase()) && !s.tags?.includes(t)).map(t => (
                                                             <button
                                                                 key={t}
                                                                 onClick={() => addTag(s.id, s.tags || [], t)}
-                                                                className="text-left text-xs px-2 py-1 hover:bg-surface-light text-slate-300 hover:text-slate-100 rounded-md font-medium truncate"
+                                                                className="block w-full text-left text-xs px-2 py-1.5 hover:bg-surface-light text-text-secondary hover:text-text-primary rounded-md transition-colors"
                                                             >
                                                                 {t}
                                                             </button>
@@ -187,32 +237,57 @@ export default function KnowledgeTable({
                                             </div>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4 relative">
-                                        {/* NOTES COLUMN */}
+
+                                    {/* Notes */}
+                                    <td className="px-5 py-4 border-b border-border/50">
                                         {s.note ? (
-                                            <div onClick={(e) => openNote(s, e)} className="cursor-pointer group/note">
-                                                <p className="text-xs text-slate-400 line-clamp-2 hover:text-slate-200 transition-colors">{s.note}</p>
-                                            </div>
+                                            <button
+                                                onClick={(e) => openNote(s, e)}
+                                                className="text-left text-xs text-text-secondary hover:text-text-primary line-clamp-2 transition-colors"
+                                            >
+                                                {s.note}
+                                            </button>
                                         ) : (
                                             <button
                                                 onClick={(e) => openNote(s, e)}
-                                                className="w-8 h-8 flex items-center justify-center rounded-full bg-surface-light text-slate-300 opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-all font-bold text-lg"
+                                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-surface-light text-text-muted opacity-0 group-hover:opacity-100 hover:bg-primary/10 hover:text-primary transition-all"
                                             >
-                                                +
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                                </svg>
                                             </button>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button onClick={(e) => removeSource(s.id, e)} className="text-slate-600 hover:text-red-400 p-2 transition-colors">
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+
+                                    {/* Delete */}
+                                    <td className="px-5 py-4 text-right border-b border-border/50">
+                                        <button
+                                            onClick={(e) => removeSource(s.id, e)}
+                                            className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-accent-coral hover:bg-accent-coral/10 opacity-0 group-hover:opacity-100 transition-all"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
                                         </button>
                                     </td>
                                 </tr>
                             ))}
+
+                            {/* Empty state */}
                             {filteredSources.length === 0 && (
                                 <tr>
-                                    <td colSpan="5" className="py-16 text-center text-slate-400 text-sm">
-                                        {filter ? "No matches found." : "Repository is empty. Start researching!"}
+                                    <td colSpan="5" className="py-16 text-center">
+                                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-surface-light flex items-center justify-center">
+                                            <svg className="w-8 h-8 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                        </div>
+                                        <p className="text-sm text-text-muted">
+                                            {filter ? "No papers match your search" : "No papers saved yet"}
+                                        </p>
+                                        <p className="text-xs text-text-muted mt-1">
+                                            {filter ? "Try different keywords" : "Start researching to build your knowledge base"}
+                                        </p>
                                     </td>
                                 </tr>
                             )}
