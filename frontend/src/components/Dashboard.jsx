@@ -3,7 +3,6 @@ import * as knowledgeService from "../api/knowledge";
 import * as chatApi from "../api/chat";
 import DashboardSidebar from "./dashboard/DashboardSidebar";
 import KnowledgeTable from "./dashboard/KnowledgeTable";
-import EditorCanvas from "./dashboard/EditorCanvas";
 import NotePopup from "./dashboard/NotePopup";
 
 export default function Dashboard({ token, handleLogout, username }) {
@@ -20,9 +19,6 @@ export default function Dashboard({ token, handleLogout, username }) {
     }, [chatWidth]);
 
     const [isResizing, setIsResizing] = useState(false);
-
-    // View state
-    const [viewMode, setViewMode] = useState('sources'); // 'sources' or 'canvas'
 
     // Tag edit state
     const [editingId, setEditingId] = useState(null);
@@ -246,8 +242,6 @@ export default function Dashboard({ token, handleLogout, username }) {
                     isResizing={isResizing}
                     setIsResizing={setIsResizing}
                     loadConversations={loadConversations}
-                    viewMode={viewMode}
-                    setViewMode={setViewMode}
                 />
 
                 {/* Resize Handle / Spacer */}
@@ -262,33 +256,29 @@ export default function Dashboard({ token, handleLogout, username }) {
                     <div className="w-1 h-8 bg-border rounded-full group-hover/resizer:bg-primary transition-colors" />
                 </div>
 
-                {viewMode === 'sources' ? (
-                    <KnowledgeTable
-                        sources={sources}
-                        filter={filter}
-                        setFilter={setFilter}
-                        selectedTags={selectedTags}
-                        setSelectedTags={setSelectedTags}
-                        showFavorites={showFavorites}
-                        setShowFavorites={setShowFavorites}
-                        allTags={allTags}
-                        toggleTagSelect={toggleTagSelect}
-                        deletingId={deletingId}
-                        undoDelete={undoDelete}
-                        undoState={undoState}
-                        toggleFavorite={toggleFavorite}
-                        removeSource={removeSource}
-                        openNote={openNote}
-                        addTag={addTag}
-                        removeTag={removeTag}
-                        editingId={editingId}
-                        setEditingId={setEditingId}
-                        tagInput={tagInput}
-                        setTagInput={setTagInput}
-                    />
-                ) : (
-                    <EditorCanvas />
-                )}
+                <KnowledgeTable
+                    sources={sources}
+                    filter={filter}
+                    setFilter={setFilter}
+                    selectedTags={selectedTags}
+                    setSelectedTags={setSelectedTags}
+                    showFavorites={showFavorites}
+                    setShowFavorites={setShowFavorites}
+                    allTags={allTags}
+                    toggleTagSelect={toggleTagSelect}
+                    deletingId={deletingId}
+                    undoDelete={undoDelete}
+                    undoState={undoState}
+                    toggleFavorite={toggleFavorite}
+                    removeSource={removeSource}
+                    openNote={openNote}
+                    addTag={addTag}
+                    removeTag={removeTag}
+                    editingId={editingId}
+                    setEditingId={setEditingId}
+                    tagInput={tagInput}
+                    setTagInput={setTagInput}
+                />
 
                 <NotePopup
                     activeNote={activeNote}

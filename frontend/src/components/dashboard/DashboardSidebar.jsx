@@ -22,7 +22,10 @@ export default function DashboardSidebar({
     };
 
     return (
-        <div className="w-[40%] h-full flex flex-col pt-6 pb-6 pl-6 relative">
+        <div
+            className="h-full flex flex-col pt-6 pb-6 pl-6 relative"
+            style={{ width: chatWidth, minWidth: 450, maxWidth: 900, flexShrink: 0 }}
+        >
             {/* Overlay backdrop */}
             {isHistoryOpen && (
                 <div
