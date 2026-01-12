@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.api import deps
-from app.models.chat import ChatQuery, ChatSession
+from app.models.chat import ChatQuery, ChatSession, ChatResultsUpdate
 from app.services.chat_service import chat_service
 
 router = APIRouter()
@@ -23,3 +23,10 @@ async def delete_chat(id: str, user_id: str = Depends(deps.get_current_user)):
 @router.post("/query")
 async def chat_query(query: ChatQuery, user_id: str = Depends(deps.get_current_user)):
     return await chat_service.process_query(query, user_id)
+
+@router.put("/{id}/results")
+async def update_chat_results(id: str, update: ChatResultsUpdate, user_id: str = Depends(deps.get_current_user)):
+    res = await chat_service.update_chat_results(id, user_id, update.results)
+    if "error" in res:
+        raise HTTPException(status_code=400, detail=res["error"])
+    return res

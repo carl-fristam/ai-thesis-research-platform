@@ -29,26 +29,48 @@ export default function Dashboard({ token, handleLogout, username }) {
     const [chats, setChats] = useState([]);
     const [activeChat, setActiveChat] = useState(null);
 
-    const loadChats = useCallback(async () => {
+    // Load chats from backend, optionally auto-selecting one by ID
+    const loadChats = useCallback(async (autoSelectId = null) => {
         if (!token) return;
         try {
-            const data = await chatService.getChats(); // Load all chats, not just knowledge_base
+            const data = await chatService.getChats("knowledge_base");
             setChats(data);
+            if (autoSelectId) {
+                const found = data.find(c => c.id === autoSelectId);
+                if (found) setActiveChat(found);
+            }
         } catch (err) {
             console.error("Failed to load chats", err);
         }
     }, [token]);
 
+    // Delete a chat and clear active if it's the one being deleted
     const deleteChat = async (e, id) => {
         e.stopPropagation();
+        const wasActive = activeChat?.id === id;
         await chatService.deleteChat(id);
+        if (wasActive) {
+            setActiveChat(null);
+        }
         loadChats();
-        if (activeChat?.id === id) setActiveChat(null);
     };
 
+    // On mount: restore previously active chat from sessionStorage
     useEffect(() => {
-        loadChats();
-    }, [loadChats]);
+        if (token) {
+            const savedChatId = sessionStorage.getItem("kb_active_chat_id");
+            loadChats(savedChatId);
+        }
+    }, [token, loadChats]);
+
+    // Persist active chat ID to sessionStorage
+    useEffect(() => {
+        if (activeChat) {
+            sessionStorage.setItem("kb_active_chat_id", activeChat.id);
+        } else {
+            sessionStorage.removeItem("kb_active_chat_id");
+        }
+    }, [activeChat]);
 
     const openNote = (s, e) => {
         e.stopPropagation();

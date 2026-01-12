@@ -6,8 +6,8 @@ export const getChats = async (type = null) => {
     return response.data;
 };
 
-export const createChat = async (title, type = 'knowledge_base') => {
-    const response = await client.post('/chats/', { title, type });
+export const createChat = async (title, type = 'knowledge_base', contextType = 'thesis') => {
+    const response = await client.post('/chats/', { title, type, context_type: contextType });
     return response.data;
 };
 
@@ -18,5 +18,10 @@ export const deleteChat = async (id) => {
 
 export const sendQuery = async (query, sessionId = null, chatType = 'thesis') => {
     const response = await client.post('/chats/query', { question: query, session_id: sessionId, chat_type: chatType });
+    return response.data;
+};
+
+export const updateChatResults = async (id, results) => {
+    const response = await client.put(`/chats/${id}/results`, { results });
     return response.data;
 };

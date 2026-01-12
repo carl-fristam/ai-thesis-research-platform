@@ -11,6 +11,7 @@ class ContextNeed(str, Enum):
 class ChatSession(BaseModel):
     title: str
     type: str = "knowledge_base"  # "knowledge_base" or "research"
+    context_type: str = "thesis"  # "thesis" or "other" - for knowledge_base chats
     last_message: str | None = None
     user_id: str | None = None
     results: list | None = None

@@ -19,6 +19,7 @@ class ChatService:
     async def process_query(self, query: ChatQuery, user_id: str):
         # 1. Load History
         conversation_history = []
+        session_context_type = "thesis"  # Default
         if query.session_id:
             session = await self.chat_collection.find_one({
                 "_id": ObjectId(query.session_id),
@@ -26,6 +27,8 @@ class ChatService:
             })
             if session and session.get("messages"):
                 conversation_history = session["messages"][-10:]
+            if session:
+                session_context_type = session.get("context_type", "thesis")
 
         # 2. Classify Query Intent
         context_need = await query_classifier.classify(query.question, conversation_history)
@@ -37,8 +40,8 @@ class ChatService:
             context_need=context_need
         )
 
-        # 4. Build System Prompt
-        system_message = prompt_builder.build_system_message(library_context, rag_context, query.chat_type)
+        # 4. Build System Prompt (use session's context_type)
+        system_message = prompt_builder.build_system_message(library_context, rag_context, session_context_type)
         # 5. Messages
         messages = []
         for msg in conversation_history:
@@ -103,5 +106,16 @@ class ChatService:
              return {"error": "Invalid ID"}
         await self.chat_collection.delete_one({"_id": obj_id, "user_id": user_id})
         return {"message": "Chat deleted"}
+
+    async def update_chat_results(self, id: str, user_id: str, results: list):
+        try:
+            obj_id = ObjectId(id)
+        except:
+            return {"error": "Invalid ID"}
+        await self.chat_collection.update_one(
+            {"_id": obj_id, "user_id": user_id},
+            {"$set": {"results": results}}
+        )
+        return {"message": "Results updated"}
 
 chat_service = ChatService()

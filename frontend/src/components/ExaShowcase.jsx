@@ -103,18 +103,10 @@ export default function ExaShowcase({ token, handleLogout }) {
             const data = await knowledgeService.searchExa(query);
             setResults(data);
 
-            // 3. Save results to chat (This part was a bit implicit in valid code, 
-            // but we don't have a direct 'save results to chat' service method exposed properly yet
-            // except via PUT /chats/{id}/results which we should add to chat.js or handle differently.
-            // For now, assume it's persisted by the backend logic or needs a specific call.
-            // The previous code called PUT /chats/{id}/results. Let's assume we need to add that to chat.js?
-            // Wait, I didn't add updateChatResults to chat.js. I should probably add it or skip persistence for now.
-            // Actually, I'll implicitly rely on the fact that I should add it.
-            // For now, I'll skip the chat persistence calls to keep it simple or use a raw call if desperate.
-            // Better: Add it to chat.js in next step if needed, but for "Educational" purposes this is Clean enough.
-
-            // To be strictly correct per my plan, I should have added `updateChatResults` to chat.js.
-            // I'll skip calling it here for now to avoid erroring if function missing.
+            // 3. Save results to chat
+            if (activeChatId && data.results) {
+                await chatService.updateChatResults(activeChatId, data.results);
+            }
 
         } catch (err) {
             setError(err.message || "Search failed");

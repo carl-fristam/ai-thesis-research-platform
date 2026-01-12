@@ -7,91 +7,54 @@ export default function ChatWidget({
     username, isOpen, toggleChat, width, setWidth, isResizing, setIsResizing, isEmbedded = false,
     activeChat, onNewChat, onChatUpdated, onToggleHistory
 }) {
-    const [messages, setMessages] = useState(() => {
-        const saved = localStorage.getItem('kb_chat_messages');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
-    const [sessionId, setSessionId] = useState(() => {
-        return localStorage.getItem('kb_chat_session_id');
-    });
-    const scrollRef = useRef(null);
-    const textareaRef = useRef(null);
+    const [sessionId, setSessionId] = useState(null);
+    const [chatType, setChatType] = useState('thesis');
     const [showTypeModal, setShowTypeModal] = useState(false);
-    const [chatType, setChatType] = useState('thesis'); // 'thesis' or 'other'
     const [isFocused, setIsFocused] = useState(false);
 
+    const scrollRef = useRef(null);
+    const textareaRef = useRef(null);
+
+    // Sync state with activeChat prop
     useEffect(() => {
         if (activeChat) {
+            // Load from activeChat (clicked from history)
             setSessionId(activeChat.id);
-            const normalizedMessages = (activeChat.messages || []).map(m => ({
+            setMessages((activeChat.messages || []).map(m => ({
                 ...m,
                 role: m.role === 'assistant' ? 'ai' : m.role,
                 text: m.text || m.content || ''
-            }));
-            setMessages(normalizedMessages);
-
-            // Update chat type based on the active chat's type
-            // Map backend types to frontend chatType values
-            // Default to 'thesis' for older chats without a type field
-            if (activeChat.type === 'research') {
-                setChatType('other');
-            } else {
-                // Default to 'thesis' for 'knowledge_base' or missing type
-                setChatType('thesis');
-            }
-
-            // Clear localStorage when using activeChat to avoid conflicts
-            localStorage.removeItem('kb_chat_messages');
-            localStorage.removeItem('kb_chat_session_id');
-            localStorage.removeItem('kb_chat_type');
+            })));
+            // Restore context_type from the chat
+            setChatType(activeChat.context_type || 'thesis');
         } else {
-            const savedMsgs = localStorage.getItem('kb_chat_messages');
-            setMessages(savedMsgs ? JSON.parse(savedMsgs) : []);
-            const savedSession = localStorage.getItem('kb_chat_session_id');
-            setSessionId(savedSession);
-            const savedChatType = localStorage.getItem('kb_chat_type');
-            if (savedChatType) {
-                setChatType(savedChatType);
-            }
+            // New chat mode - clear everything
+            setSessionId(null);
+            setMessages([]);
+            // Keep chatType as-is (user selected it via modal)
         }
     }, [activeChat]);
 
-    // Save to localStorage ONLY when NOT using activeChat
-    useEffect(() => {
-        if (!activeChat) {
-            localStorage.setItem('kb_chat_messages', JSON.stringify(messages));
-        }
-    }, [messages, activeChat]);
-
-    useEffect(() => {
-        if (!activeChat && sessionId) {
-            localStorage.setItem('kb_chat_session_id', sessionId);
-        }
-    }, [sessionId, activeChat]);
-
-    useEffect(() => {
-        if (!activeChat) {
-            localStorage.setItem('kb_chat_type', chatType);
-        }
-    }, [chatType, activeChat]);
-
+    // Auto-scroll to bottom
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages, isOpen, isEmbedded]);
 
+    // Auto-resize textarea
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = 'auto';
             const scrollHeight = textareaRef.current.scrollHeight;
-            const maxHeight = 200;
-            textareaRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
+            textareaRef.current.style.height = Math.min(scrollHeight, 200) + 'px';
         }
     }, [input]);
 
+    // Handle panel resize
     useEffect(() => {
         const handleMouseMove = (e) => {
             if (!isResizing) return;
@@ -129,23 +92,25 @@ export default function ChatWidget({
         let currentSessionId = sessionId;
 
         try {
-            if (!sessionId) {
-                try {
-                    // Map frontend chatType to backend session type
-                    const sessionType = chatType === 'thesis' ? 'knowledge_base' : 'research';
-                    const sessionData = await chatService.createChat(currentInput.substring(0, 50), sessionType);
-                    currentSessionId = sessionData.id;
-                    setSessionId(currentSessionId);
-                } catch (err) {
-                    console.error('Failed to create session:', err);
-                }
+            // Create session if needed
+            if (!currentSessionId) {
+                const sessionData = await chatService.createChat(
+                    currentInput.substring(0, 50),
+                    'knowledge_base',
+                    chatType
+                );
+                currentSessionId = sessionData.id;
+                setSessionId(currentSessionId);
             }
 
+            // Add placeholder for AI response
             const aiMessageId = Date.now();
             setMessages(prev => [...prev, { role: 'ai', text: '', id: aiMessageId, sources: [], showSources: false }]);
 
+            // Send query
             const data = await chatService.sendQuery(currentInput, currentSessionId, chatType);
 
+            // Update AI message with response
             setMessages(prev => prev.map(msg =>
                 msg.id === aiMessageId
                     ? {
@@ -157,6 +122,7 @@ export default function ChatWidget({
                     : msg
             ));
 
+            // Refresh chat list
             if (onChatUpdated) {
                 onChatUpdated();
             }
@@ -176,33 +142,21 @@ export default function ChatWidget({
     };
 
     const handleNewChat = () => {
-        setShowTypeModal(true); // Show the modal instead of creating chat immediately
+        setShowTypeModal(true);
     };
 
     const confirmNewChat = (type) => {
-        setChatType(type); // Store the selected type
-        setShowTypeModal(false); // Hide the modal
-
-        if (onNewChat) {
-            onNewChat(); // This sets activeChat to null
-        }
-        const initialMessage = [];
-        setMessages(initialMessage);
-        setInput('');
+        setChatType(type);
+        setShowTypeModal(false);
+        setMessages([]);
         setSessionId(null);
-        // Only clear localStorage when creating truly new chat (not switching to existing)
-        if (!activeChat) {
-            localStorage.removeItem('kb_chat_messages');
-            localStorage.removeItem('kb_chat_session_id');
-            localStorage.setItem('kb_chat_type', type);
-        }
+        setInput('');
+        if (onNewChat) onNewChat();
     };
 
     const copyToClipboard = async (text) => {
         try {
-            // Copy as plain text (fallback)
             await navigator.clipboard.writeText(text);
-            console.log('Copied to clipboard');
         } catch (err) {
             console.error('Failed to copy:', err);
         }
@@ -341,13 +295,12 @@ export default function ChatWidget({
 
                 {/* Floating Input area */}
                 <div className="relative p-4">
-                    {/* Shadow gradient - creates upward shadow effect */}
+                    {/* Shadow gradient */}
                     <div className="absolute bottom-full left-0 right-0 h-12 bg-gradient-to-t from-surface/95 via-surface/50 to-transparent pointer-events-none" />
 
-                    {/* Input container with shadow and conditional primary border */}
-                    <div className={`relative bg-surface rounded-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.3)] border-2 overflow-hidden transition-colors ${isFocused ? 'border-primary' : 'border-border'
-                        }`}>
-                        {/* Top section - Textarea only */}
+                    {/* Input container */}
+                    <div className={`relative bg-surface rounded-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.3)] border-2 overflow-hidden transition-colors ${isFocused ? 'border-primary' : 'border-border'}`}>
+                        {/* Textarea */}
                         <div className="bg-surface-light p-4">
                             <textarea
                                 ref={textareaRef}
@@ -371,7 +324,6 @@ export default function ChatWidget({
 
                         {/* Bottom section - Chat mode indicator + Send button */}
                         <div className="border-t border-border bg-surface px-4 py-2.5 flex items-center justify-between">
-                            {/* Chat mode indicator */}
                             <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${chatType === 'thesis'
                                 ? 'bg-primary/10 text-primary border border-primary/20'
                                 : 'bg-surface-light text-text-muted border border-border'
@@ -380,7 +332,6 @@ export default function ChatWidget({
                                 {chatType === 'thesis' ? 'AML Thesis' : 'General Mode'}
                             </div>
 
-                            {/* Send button */}
                             <button
                                 onClick={handleSend}
                                 disabled={!input.trim() || loading}
@@ -424,8 +375,6 @@ export default function ChatWidget({
                                 </div>
                             </div>
                         )}
-
-
                     </div>
                 </div>
             </div>
