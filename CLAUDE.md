@@ -191,9 +191,11 @@ Build System Prompt → Claude API (with caching) → Save Response
   _id: ObjectId,
   user_id: string,
   title: string,
-  type: "knowledge_base" | "research",
+  category: "conversation" | "search",  // conversation = chat, search = Exa results
+  mode: "thesis" | "general",           // prompt context mode
   created_at: string,
   last_message: string,
+  results: array,                       // Exa search results (for search category)
   messages: [
     {
       role: "user" | "ai",
@@ -236,10 +238,11 @@ Build System Prompt → Claude API (with caching) → Save Response
 - `DELETE /knowledge/saved-results/{id}` - Delete paper + vector
 
 **Chat:**
-- `GET /chats/?type=...` - List chat sessions
+- `GET /chats/?category=...` - List sessions (conversation/search)
 - `POST /chats/` - Create new session
 - `DELETE /chats/{id}` - Delete session
 - `POST /chats/query` - Send message (executes RAG pipeline)
+- `PUT /chats/{id}/results` - Update search results for a session
 
 ## Key Implementation Details
 
@@ -357,7 +360,7 @@ Code changes reflect immediately without rebuilding containers.
 - Extracted `prompt_builder.py` for system prompt construction
 - Cleaner separation of concerns in chat service
 
-**Branch ui/new-look:** UI redesign in progress
-- Updated Tailwind configuration
-- HuggingFace-inspired color scheme
-- Component style improvements
+**Commit dee8ba4:** Refactored chat session naming
+- Renamed `type` to `category` (conversation/search)
+- Renamed `context_type` to `mode` (thesis/general)
+- Added Python Enums for type safety
