@@ -1,4 +1,4 @@
-# Research Tool
+# AI Thesis Research Platform
 
 A custom research assistant I built for my MSc. Used to find, organize, and chat with research papers.
 

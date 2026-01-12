@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a research assistant tool built for MSc thesis work on Anti-Money Laundering (AML). It combines academic paper search (via Exa AI), knowledge management with RAG (Retrieval-Augmented Generation), and AI-powered chat (Claude 4.5 Sonnet) to help find, organize, and interact with research papers.
+**AI Thesis Research Platform** - A research assistant tool built for MSc thesis work on Anti-Money Laundering (AML). It combines academic paper search (via Exa AI), knowledge management with RAG (Retrieval-Augmented Generation), and AI-powered chat (Claude 4.5 Sonnet) to help find, organize, and interact with research papers.
 
 **Tech Stack:**
 - Frontend: React 19 + Vite + Tailwind CSS

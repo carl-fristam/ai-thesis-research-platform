@@ -1,21 +1,21 @@
 {
-  "name": "m4-fullstack",
+  "name": "ai-thesis-research-platform",
   "version": "1.0.0",
   "description": "A custom research assistant I built for my MSc. Used to find, organize, and chat with research papers.",
   "main": "index.js",
   "scripts": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/carl-fristam/m4-fullstack-test.git"
+    "url": "git+https://github.com/carl-fristam/ai-thesis-research-platform.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/carl-fristam/m4-fullstack-test/issues"
+    "url": "https://github.com/carl-fristam/ai-thesis-research-platform/issues"
   },
-  "homepage": "https://github.com/carl-fristam/m4-fullstack-test#readme",
+  "homepage": "https://github.com/carl-fristam/ai-thesis-research-platform#readme",
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@types/node": "^25.0.3"
