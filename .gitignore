@@ -39,3 +39,6 @@ backend/.env
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Markdown guides
+CODEBASE_WALKTHROUGH.md
