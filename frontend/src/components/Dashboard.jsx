@@ -226,7 +226,7 @@ export default function Dashboard({ token, handleLogout, username }) {
 
     return (
         <div className="h-screen bg-background flex overflow-hidden">
-            <main className="flex-1 flex items-start w-full h-full pt-24">
+            <main className="flex-1 flex items-start w-full h-full pt-14">
                 <DashboardSidebar
                     isHistoryOpen={isHistoryOpen}
                     setIsHistoryOpen={setIsHistoryOpen}

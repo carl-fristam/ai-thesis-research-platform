@@ -176,11 +176,11 @@ export default function ExaShowcase({ token, handleLogout }) {
     const togglePreviewSize = () => setPreviewExpanded(!previewExpanded);
 
     return (
-        <div className="flex flex-col h-screen bg-background font-sans overflow-hidden pt-20">
+        <div className="flex flex-col h-screen bg-background font-sans overflow-hidden pt-14">
             {/* OVERLAY BACKDROP */}
             {isSidebarOpen && (
                 <div
-                    className="fixed top-20 left-0 right-0 bottom-0 bg-black/20 backdrop-blur-sm z-[35] transition-opacity duration-500"
+                    className="fixed top-14 left-0 right-0 bottom-0 bg-black/20 backdrop-blur-sm z-[35] transition-opacity duration-500"
                     onClick={() => setIsSidebarOpen(false)}
                 />
             )}
@@ -208,17 +208,17 @@ export default function ExaShowcase({ token, handleLogout }) {
                         currentSearchId={currentSearchId}
                     />
 
-                    <div className="max-w-7xl mx-auto px-6 py-12">
+                    <div className="max-w-5xl mx-auto px-6 py-8">
                         {loading && (
                             <div className="flex flex-col items-center justify-center py-10">
                                 <div className="w-10 h-10 border-4 border-border border-t-primary rounded-full animate-spin mb-4"></div>
-                                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Processing...</p>
+                                <p className="text-text-muted font-bold uppercase tracking-widest text-xs">Processing...</p>
                             </div>
                         )}
 
                         {error && (
-                            <div className="bg-red-900/30 border border-red-700/50 p-6 text-center max-w-2xl mx-auto mb-8 rounded-xl">
-                                <p className="text-red-300 font-bold text-sm">{error}</p>
+                            <div className="bg-accent-coral/10 border border-accent-coral/20 p-6 text-center max-w-2xl mx-auto mb-8 rounded-xl">
+                                <p className="text-accent-coral font-bold text-sm">{error}</p>
                             </div>
                         )}
 
