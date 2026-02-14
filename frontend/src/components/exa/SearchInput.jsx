@@ -26,7 +26,7 @@ export default function SearchInput({
                     <div className="flex-1 relative">
                         <input
                             autoFocus
-                            className="w-full bg-surface border border-border text-text-primary px-4 py-3 pr-10 rounded-xl text-sm placeholder:text-text-muted focus:border-primary focus:ring-1 focus:ring-primary/10 outline-none transition-all shadow-card"
+                            className="w-full bg-surface border border-border text-text-primary px-4 py-3 pr-10 rounded-xl text-sm placeholder:text-text-muted focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all shadow-card"
                             placeholder="Describe what you're researching..."
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}

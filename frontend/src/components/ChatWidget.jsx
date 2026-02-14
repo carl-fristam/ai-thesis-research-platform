@@ -275,7 +275,7 @@ export default function ChatWidget({
                 {/* Input area */}
                 <div className="relative p-3">
                     <div className={`relative bg-surface rounded-xl border overflow-hidden transition-colors ${isFocused ? 'border-primary shadow-[0_0_0_1px_var(--primary)]' : 'border-border'}`}>
-                        <div className="bg-surface-light px-4 py-3">
+                        <div className="px-4 py-3">
                             <textarea
                                 ref={textareaRef}
                                 autoFocus
@@ -296,9 +296,9 @@ export default function ChatWidget({
                             />
                         </div>
 
-                        <div className="border-t border-border bg-surface px-4 py-2 flex items-center justify-between">
+                        <div className="border-border bg-surface px-4 py-2 flex items-center justify-between">
                             <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium ${mode === 'thesis'
-                                ? 'bg-primary/10 text-primary border border-primary/20'
+                                ? 'bg-primary/10 text-primary border border-primary'
                                 : 'bg-surface-light text-text-muted border border-border'
                                 }`}>
                                 <div className={`w-1 h-1 rounded-full ${mode === 'thesis' ? 'bg-primary' : 'bg-text-muted'}`} />
