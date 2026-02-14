@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from "./ThemeContext";
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import ExaShowcase from './components/ExaShowcase';
@@ -31,54 +32,56 @@ export default function App() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setToken(null);
-
   };
-
-
-
 
   /* ---------- RENDER GATEKEEPER ---------- */
   if (!token) {
-    return <Login onLoginSuccess={() => setToken(localStorage.getItem("token"))} />;
+    return (
+      <ThemeProvider>
+        <Login onLoginSuccess={() => setToken(localStorage.getItem("token"))} />
+      </ThemeProvider>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-background text-slate-100 font-sans antialiased">
-      <BrowserRouter>
-        {token && <Header username={username} handleLogout={handleLogout} />}
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <Dashboard
-                token={token}
-                handleLogout={handleLogout}
-                username={username}
-              />
-            }
-          />
-          <Route
-            path="/exa-showcase"
-            element={
-              <ExaShowcase
-                token={token}
-                handleLogout={handleLogout}
-                username={username}
-              />
-            }
-          />
-          <Route
-            path="/chat-widget"
-            element={
-              <ChatWidget
-                username={username}
-                token={token}
-              />
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <ThemeProvider>
+      <div className="min-h-screen bg-background text-text-primary font-sans antialiased">
+        <BrowserRouter>
+          {token && <Header username={username} handleLogout={handleLogout} />}
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Dashboard
+                  token={token}
+                  handleLogout={handleLogout}
+                  username={username}
+                />
+              }
+            />
+            <Route
+              path="/exa-showcase"
+              element={
+                <ExaShowcase
+                  token={token}
+                  handleLogout={handleLogout}
+                  username={username}
+                />
+              }
+            />
+            <Route
+              path="/chat-widget"
+              element={
+                <ChatWidget
+                  username={username}
+                  token={token}
+                />
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </div>
+    </ThemeProvider>
   );
 }
